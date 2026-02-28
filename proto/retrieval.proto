@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package confuse.retrieval.v1;
+
+// Data-Vent Retrieval Service - intelligent search and graph traversal
+service RetrievalService {
+  // Vector similarity search
+  rpc Search(RetrievalSearchRequest) returns (RetrievalSearchResponse);
+  
+  // DFS traversal from starting chunks
+  rpc DFSTraverse(RetrievalDFSRequest) returns (RetrievalDFSResponse);
+  
+  // Hybrid search (vector + graph)
+  rpc HybridSearch(HybridSearchRequest) returns (HybridSearchResponse);
+  
+  // Health check
+  rpc HealthCheck(RetrievalHealthRequest) returns (RetrievalHealthResponse);
+}
+
+// --- Search Messages ---
+
+message RetrievalSearchRequest {
+  repeated float query_vectors = 1;
+  int32 limit = 2;
+  float similarity_threshold = 3;
+  repeated string source_ids = 4;
+  map<string, string> options = 5;
+}
+
+message RetrievedChunk {
+  string chunk_id = 1;
+  string content = 2;
+  float score = 3;
+  string chunk_type = 4;
+  string source_id = 5;
+  string document_id = 6;
+  map<string, string> metadata = 7;
+}
+
+message RetrievalSearchResponse {
+  repeated RetrievedChunk chunks = 1;
+  int32 total = 2;
+  float search_time_ms = 3;
+}
+
+// --- DFS Traversal Messages ---
+
+message RetrievalDFSRequest {
+  repeated string start_chunk_ids = 1;
+  repeated float query_vectors = 2;
+  int32 max_depth = 3;
+  float min_relevance = 4;
+  int32 max_results = 5;
+}
+
+message RetrievalDFSResponse {
+  repeated RetrievedChunk chunks = 1;
+  int32 nodes_visited = 2;
+  bool completion_reached = 3;
+  float traversal_time_ms = 4;
+}
+
+// --- Hybrid Search Messages ---
+
+message HybridSearchRequest {
+  string query_text = 1;
+  repeated float query_vectors = 2;
+  int32 limit = 3;
+  float similarity_threshold = 4;
+  int32 dfs_depth = 5;
+  float dfs_min_relevance = 6;
+  repeated string source_ids = 7;
+}
+
+message HybridSearchResponse {
+  repeated RetrievedChunk chunks = 1;
+  int32 vector_matches = 2;
+  int32 graph_matches = 3;
+  bool completion_reached = 4;
+  float total_time_ms = 5;
+}
+
+// --- Health Messages ---
+
+message RetrievalHealthRequest {}
+
+message RetrievalHealthResponse {
+  string status = 1;
+  string version = 2;
+  bool falkordb_connected = 3;
+  bool embeddings_service_connected = 4;
+}

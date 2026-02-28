@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     # Service Configuration
     PORT: int = 3005
     HOST: str = "0.0.0.0"
+    GRPC_PORT: int = 50056
+    GRPC_HOST: str = "0.0.0.0"
     ENVIRONMENT: str = "production"
     
     # FalcorDB Configuration
@@ -19,11 +21,20 @@ class Settings(BaseSettings):
     FALCORDB_USERNAME: str = "neo4j"
     FALCORDB_PASSWORD: str
     FALCORDB_DATABASE: str = "neo4j"
+    FALCORDB_VECTOR_DIMENSION: int = 384
+    FALCORDB_SIMILARITY_THRESHOLD: float = 0.75
+    FALCORDB_MAX_RESULTS: int = 100
     
-    # Service URLs
+    # Downstream Service URLs (gRPC)
+    EMBEDDINGS_GRPC_ADDR: str = "embeddings-service:50054"
+    
+    # Service URLs (HTTP)
     EMBEDDINGS_SERVICE_URL: str = "http://localhost:3001"
     CLIENT_CONNECTOR_URL: str = "http://localhost:3004"
     FEATURE_TOGGLE_SERVICE_URL: str = "http://localhost:3099"
+    
+    # Kafka Streaming Pipeline
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
     
     # Graphiti Configuration
     GRAPHITI_LLM_PROVIDER: str = "ollama"

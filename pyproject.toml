@@ -1,7 +1,7 @@
 [project]
 name = "data-vent"
 version = "0.1.0"
-description = "Semantic search and graph traversal service using Graphiti and FalcorDB"
+description = "Intelligent retrieval engine - semantic search, DFS traversal, and graph queries using FalkorDB"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.109.0",
@@ -13,6 +13,12 @@ dependencies = [
     "httpx>=0.26.0",
     "python-dotenv>=1.0.0",
     "structlog>=24.1.0",
+    # gRPC for distributed pipeline
+    "grpcio>=1.60.0",
+    "grpcio-tools>=1.60.0",
+    "grpcio-reflection>=1.60.0",
+    # Kafka streaming
+    "aiokafka>=0.10.0",
 ]
 
 [project.optional-dependencies]
