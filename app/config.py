@@ -42,6 +42,21 @@ class Settings(BaseSettings):
     GRAPHITI_LLM_ENDPOINT: str = "http://localhost:11434"
     GRAPHITI_EMBEDDING_DIM: int = 384
     
+    # Retrieval Pipeline Configuration
+    PIPELINE_MAX_QUERY_CHUNKS: int = 10
+    PIPELINE_PER_CHUNK_TIMEOUT: float = 10.0
+    PIPELINE_VECTOR_TOP_K: int = 5
+    PIPELINE_DFS_DEPTH: int = 2
+    PIPELINE_DFS_MIN_RELEVANCE: float = 0.3
+    PIPELINE_DFS_MAX_RESULTS: int = 20
+    PIPELINE_MAX_TOTAL_RESULTS: int = 50
+    PIPELINE_VECTOR_WEIGHT: float = 0.6
+    PIPELINE_GRAPH_WEIGHT: float = 0.3
+    PIPELINE_CROSS_CHUNK_WEIGHT: float = 0.1
+    
+    # Client-Connector (upstream)
+    CLIENT_CONNECTOR_GRPC_ADDR: str = "client-connector:50055"
+    
     # Logging
     LOG_LEVEL: str = "INFO"
     

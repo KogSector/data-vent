@@ -4,6 +4,9 @@ package confuse.retrieval.v1;
 
 // Data-Vent Retrieval Service - intelligent search and graph traversal
 service RetrievalService {
+  // Full retrieval pipeline: decompose → parallel search → aggregate
+  rpc Retrieve(RetrieveRequest) returns (RetrieveResponse);
+
   // Vector similarity search
   rpc Search(RetrievalSearchRequest) returns (RetrievalSearchResponse);
   
@@ -15,6 +18,49 @@ service RetrievalService {
   
   // Health check
   rpc HealthCheck(RetrievalHealthRequest) returns (RetrievalHealthResponse);
+}
+
+// --- Full Retrieval Pipeline Messages ---
+
+message RetrieveRequest {
+  string query = 1;
+  int32 limit = 2;
+  repeated string source_ids = 3;
+  map<string, string> options = 4;
+}
+
+message RetrieveResponse {
+  repeated ScoredResult results = 1;
+  int32 total_results = 2;
+  int32 unique_sources = 3;
+  int32 vector_matches = 4;
+  int32 graph_matches = 5;
+  bool completion_reached = 6;
+  repeated QueryChunkInfo query_chunks = 7;
+  float decomposition_time_ms = 8;
+  float search_time_ms = 9;
+  float aggregation_time_ms = 10;
+  float total_time_ms = 11;
+}
+
+message ScoredResult {
+  string chunk_id = 1;
+  string content = 2;
+  float final_score = 3;
+  float vector_score = 4;
+  float graph_score = 5;
+  float cross_chunk_boost = 6;
+  string chunk_type = 7;
+  string source_id = 8;
+  string document_id = 9;
+  map<string, string> metadata = 10;
+  repeated string matched_by_chunks = 11;
+}
+
+message QueryChunkInfo {
+  string text = 1;
+  string intent = 2;
+  float weight = 3;
 }
 
 // --- Search Messages ---
