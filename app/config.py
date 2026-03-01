@@ -33,9 +33,6 @@ class Settings(BaseSettings):
     CLIENT_CONNECTOR_URL: str = "http://localhost:3004"
     FEATURE_TOGGLE_SERVICE_URL: str = "http://localhost:3099"
     
-    # Kafka Streaming Pipeline
-    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
-    
     # Graphiti Configuration
     GRAPHITI_LLM_PROVIDER: str = "ollama"
     GRAPHITI_LLM_MODEL: str = "llama3.2"

@@ -1,7 +1,7 @@
 ﻿"""
 Data Vent - Main Application Entry Point
 Intelligent retrieval engine with HTTP + gRPC servers.
-Kafka consumer: listens to chunks.stored notifications to update search index.
+Direct query service: queries FalkorDB directly for search results.
 """
 import asyncio
 import time
@@ -90,9 +90,6 @@ async def lifespan(app: FastAPI):
     # Start gRPC server in background
     grpc_task = asyncio.create_task(_start_grpc_background())
     
-    # Start Kafka consumer for chunks.stored notifications
-    kafka_task = asyncio.create_task(_start_kafka_consumer())
-    
     logger.info("data_vent_started", status="ready")
     
     yield
@@ -102,7 +99,6 @@ async def lifespan(app: FastAPI):
     if _retriever:
         await _retriever.close()
     grpc_task.cancel()
-    kafka_task.cancel()
 
 
 async def _start_grpc_background():
@@ -114,48 +110,6 @@ async def _start_grpc_background():
         logger.error("grpc_server_failed", error=str(e))
 
 
-async def _start_kafka_consumer():
-    """Start Kafka consumer for chunks.stored notifications."""
-    try:
-        from aiokafka import AIOKafkaConsumer
-        import json
-        
-        bootstrap_servers = settings.KAFKA_BOOTSTRAP_SERVERS
-        consumer = AIOKafkaConsumer(
-            "chunks.stored",
-            bootstrap_servers=bootstrap_servers,
-            group_id="data-vent",
-            value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-            auto_offset_reset="earliest",
-            enable_auto_commit=False,
-        )
-        await consumer.start()
-        logger.info("Kafka consumer started", topic="chunks.stored", bootstrap_servers=bootstrap_servers)
-        
-        try:
-            async for msg in consumer:
-                try:
-                    notification = msg.value
-                    chunk_ids = notification.get("chunk_ids", [])
-                    source_id = notification.get("source_id", "unknown")
-                    
-                    logger.info(
-                        "chunks_stored_notification",
-                        chunk_ids_count=len(chunk_ids),
-                        source_id=source_id,
-                    )
-                    
-                    # Index update is handled by FalkorDB directly
-                    # data-vent reads from FalkorDB on query time
-                    # This notification primarily signals that new data is available
-                    
-                    await consumer.commit()
-                except Exception as e:
-                    logger.error("kafka_message_processing_failed", error=str(e))
-        finally:
-            await consumer.stop()
-    except Exception as e:
-        logger.error("kafka_consumer_failed", error=str(e))
 
 
 # â”€â”€â”€ FastAPI app â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

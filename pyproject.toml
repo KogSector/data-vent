@@ -17,8 +17,6 @@ dependencies = [
     "grpcio>=1.60.0",
     "grpcio-tools>=1.60.0",
     "grpcio-reflection>=1.60.0",
-    # Kafka streaming
-    "aiokafka>=0.10.0",
 ]
 
 [project.optional-dependencies]
