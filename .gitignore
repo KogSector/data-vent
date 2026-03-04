@@ -1,2 +1,4 @@
 *.env
+.env.map
+.env.secret
 __pycache__
