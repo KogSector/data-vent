@@ -8,11 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY pyproject.toml ./
+COPY data-vent/pyproject.toml ./
 RUN pip install --no-cache-dir -e ".[dev]" || pip install --no-cache-dir -e .
 
-# Copy application code
-COPY . .
+# Copy application code and proto
+COPY data-vent/app ./app
+COPY data-vent/proto ./proto
 
 # Generate gRPC stubs
 RUN python -m grpc_tools.protoc \
