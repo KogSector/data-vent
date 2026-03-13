@@ -13,6 +13,7 @@ dependencies = [
     "httpx>=0.26.0",
     "python-dotenv>=1.0.0",
     "structlog>=24.1.0",
+    "uuid>=1.30",
     # gRPC for distributed pipeline
     "grpcio>=1.60.0",
     "grpcio-tools>=1.60.0",

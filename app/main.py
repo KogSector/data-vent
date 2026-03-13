@@ -361,6 +361,14 @@ try:
 except ImportError:
     logger.info("optional_routers_not_found")
 
+# Include the new enhanced search routes
+try:
+    from app.routes.search import router as search_router
+    app.include_router(search_router, tags=["enhanced-search"])
+    logger.info("enhanced_search_routes_loaded")
+except ImportError:
+    logger.warning("enhanced_search_routes_not_found")
+
 
 if __name__ == "__main__":
     uvicorn.run(
