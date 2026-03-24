@@ -1,45 +1,46 @@
 """
-Data Vent - Configuration Management
+Data Vent — Configuration Management
 """
-import os
-from pydantic_settings import BaseSettings
 from typing import Optional
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from environment variables"""
-    
-    # Service Configuration
+    """Application settings loaded from environment variables."""
+
+    # ── Service ────────────────────────────────────────────────────────────────
     PORT: int = 3005
     HOST: str = "0.0.0.0"
     GRPC_PORT: int = 50056
     GRPC_HOST: str = "0.0.0.0"
     ENVIRONMENT: str = "production"
-    
-    # FalcorDB Configuration
-    FALCORDB_URI: str
-    FALCORDB_USERNAME: str = "neo4j"
-    FALCORDB_PASSWORD: str
-    FALCORDB_DATABASE: str = "neo4j"
-    FALCORDB_VECTOR_DIMENSION: int = 384
-    FALCORDB_SIMILARITY_THRESHOLD: float = 0.75
-    FALCORDB_MAX_RESULTS: int = 100
-    
-    # Downstream Service URLs (gRPC)
-    EMBEDDINGS_GRPC_ADDR: str = "embeddings-service:50054"
-    
-    # Service URLs (HTTP)
-    EMBEDDINGS_SERVICE_URL: str = "http://localhost:3001"
-    CLIENT_CONNECTOR_URL: str = "http://localhost:3004"
-    FEATURE_TOGGLE_SERVICE_URL: str = "http://localhost:3099"
-    
-    # Graphiti Configuration
+
+    # ── FalkorDB ───────────────────────────────────────────────────────────────
+    FALKORDB_HOST: str = "localhost"
+    FALKORDB_PORT: int = 6379
+    FALKORDB_USERNAME: str = "default"
+    FALKORDB_PASSWORD: str = ""
+    FALKORDB_DATABASE: int = 0
+    FALKORDB_GRAPH_NAME: str = "confuse_knowledge"
+    FALKORDB_VECTOR_DIMENSION: int = 384
+    FALKORDB_SIMILARITY_THRESHOLD: float = 0.75
+    FALKORDB_MAX_RESULTS: int = 100
+
+    # ── Graphiti / LLM ─────────────────────────────────────────────────────────
     GRAPHITI_LLM_PROVIDER: str = "ollama"
     GRAPHITI_LLM_MODEL: str = "llama3.2"
     GRAPHITI_LLM_ENDPOINT: str = "http://localhost:11434"
     GRAPHITI_EMBEDDING_DIM: int = 384
-    
-    # Retrieval Pipeline Configuration
+    GRAPHITI_GROUP_ID: str = "confuse_knowledge"
+
+    # ── Downstream Services ───────────────────────────────────────────────────
+    EMBEDDINGS_GRPC_ADDR: str = "embeddings-service:50054"
+    EMBEDDINGS_SERVICE_URL: str = "http://localhost:3001"
+    CLIENT_CONNECTOR_URL: str = "http://localhost:3004"
+    CLIENT_CONNECTOR_GRPC_ADDR: str = "client-connector:50055"
+    FEATURE_TOGGLE_SERVICE_URL: str = "http://localhost:3099"
+
+    # ── Retrieval Pipeline ────────────────────────────────────────────────────
     PIPELINE_MAX_QUERY_CHUNKS: int = 10
     PIPELINE_PER_CHUNK_TIMEOUT: float = 10.0
     PIPELINE_VECTOR_TOP_K: int = 5
@@ -50,13 +51,10 @@ class Settings(BaseSettings):
     PIPELINE_VECTOR_WEIGHT: float = 0.6
     PIPELINE_GRAPH_WEIGHT: float = 0.3
     PIPELINE_CROSS_CHUNK_WEIGHT: float = 0.1
-    
-    # Client-Connector (upstream)
-    CLIENT_CONNECTOR_GRPC_ADDR: str = "client-connector:50055"
-    
-    # Logging
+
+    # ── Logging ───────────────────────────────────────────────────────────────
     LOG_LEVEL: str = "INFO"
-    
+
     class Config:
         env_file = (".env.map", ".env.secret")
         case_sensitive = True

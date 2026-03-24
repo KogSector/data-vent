@@ -113,27 +113,26 @@ class RetrievalServicer:
         )
     
     async def Search(self, request, context):
-        """Handle vector similarity search."""
-        results = await self.retriever.vector_search(
-            query_vectors=list(request.query_vectors),
-            limit=request.limit or 10,
-            similarity_threshold=request.similarity_threshold or settings.FALCORDB_SIMILARITY_THRESHOLD,
-            source_ids=list(request.source_ids) if request.source_ids else None,
+        """Handle semantic search via Graphiti."""
+        results = await self.retriever.retrieve(
+            query=request.query_text if hasattr(request, "query_text") else "",
+            num_results=request.limit or 10,
+            group_ids=list(request.source_ids) if hasattr(request, "source_ids") and request.source_ids else None,
         )
-        
-        chunks = []
-        for r in results:
-            chunk = retrieval_pb2.RetrievedChunk(
-                chunk_id=r.chunk_id,
+
+        chunks = [
+            retrieval_pb2.RetrievedChunk(
+                chunk_id=r.metadata.get("uuid", ""),
                 content=r.content,
                 score=r.score,
-                chunk_type=r.chunk_type,
-                source_id=r.source_id,
-                document_id=r.document_id,
+                chunk_type="graphiti",
+                source_id="",
+                document_id="",
                 metadata=r.metadata,
             )
-            chunks.append(chunk)
-        
+            for r in results
+        ]
+
         return retrieval_pb2.RetrievalSearchResponse(
             chunks=chunks,
             total=len(chunks),
@@ -141,65 +140,60 @@ class RetrievalServicer:
         )
     
     async def DFSTraverse(self, request, context):
-        """Handle DFS traversal."""
-        result = await self.retriever.dfs_traversal(
-            start_chunk_ids=list(request.start_chunk_ids),
-            max_depth=request.max_depth or 3,
-            min_relevance=request.min_relevance or 0.3,
-            max_results=request.max_results or 50,
+        """Graph-aware traversal via Graphiti centre-node search."""
+        results = await self.retriever.retrieve_with_context(
+            query=getattr(request, "query_text", ""),
+            entity_uuid=list(request.start_chunk_ids)[0] if getattr(request, "start_chunk_ids", None) else "",
+            num_results=getattr(request, "max_results", 50) or 50,
         )
-        
-        chunks = []
-        for r in result.chunks:
-            chunk = retrieval_pb2.RetrievedChunk(
-                chunk_id=r.chunk_id,
+
+        chunks = [
+            retrieval_pb2.RetrievedChunk(
+                chunk_id=r.metadata.get("uuid", ""),
                 content=r.content,
                 score=r.score,
-                chunk_type=r.chunk_type,
-                source_id=r.source_id,
-                document_id=r.document_id,
+                chunk_type="graphiti",
+                source_id="",
+                document_id="",
                 metadata=r.metadata,
             )
-            chunks.append(chunk)
-        
+            for r in results
+        ]
+
         return retrieval_pb2.RetrievalDFSResponse(
             chunks=chunks,
-            nodes_visited=result.nodes_visited,
-            completion_reached=result.completion_reached,
+            nodes_visited=len(chunks),
+            completion_reached=True,
             traversal_time_ms=0.0,
         )
-    
+
     async def HybridSearch(self, request, context):
-        """Handle hybrid search (vector + graph)."""
-        result = await self.retriever.hybrid_search(
-            query_text=request.query_text,
-            query_vectors=list(request.query_vectors),
-            limit=request.limit or 20,
-            similarity_threshold=request.similarity_threshold or settings.FALCORDB_SIMILARITY_THRESHOLD,
-            dfs_depth=request.dfs_depth or 2,
-            dfs_min_relevance=request.dfs_min_relevance or 0.3,
-            source_ids=list(request.source_ids) if request.source_ids else None,
+        """Hybrid search via Graphiti (vector + BM25 + graph)."""
+        results = await self.retriever.retrieve(
+            query=getattr(request, "query_text", ""),
+            num_results=getattr(request, "limit", 20) or 20,
+            group_ids=list(request.source_ids) if getattr(request, "source_ids", None) else None,
         )
-        
-        chunks = []
-        for r in result["chunks"]:
-            chunk = retrieval_pb2.RetrievedChunk(
-                chunk_id=r.chunk_id,
+
+        chunks = [
+            retrieval_pb2.RetrievedChunk(
+                chunk_id=r.metadata.get("uuid", ""),
                 content=r.content,
                 score=r.score,
-                chunk_type=r.chunk_type,
-                source_id=r.source_id,
-                document_id=r.document_id,
+                chunk_type="graphiti",
+                source_id="",
+                document_id="",
                 metadata=r.metadata,
             )
-            chunks.append(chunk)
-        
+            for r in results
+        ]
+
         return retrieval_pb2.HybridSearchResponse(
             chunks=chunks,
-            vector_matches=result["vector_matches"],
-            graph_matches=result["graph_matches"],
-            completion_reached=result["completion_reached"],
-            total_time_ms=result["total_time_ms"],
+            vector_matches=len(chunks),
+            graph_matches=0,
+            completion_reached=True,
+            total_time_ms=0.0,
         )
     
     async def HealthCheck(self, request, context):

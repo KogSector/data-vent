@@ -12,14 +12,14 @@ router = APIRouter()
 async def health_check(request: Request):
     """Health check endpoint"""
     
-    # Check FalcorDB connection
+    # Check FalkorDB connection
     try:
         graphiti_service = request.app.state.graphiti_service
         graphiti_service.driver.verify_connectivity()
-        falcordb_healthy = True
+        falkordb_healthy = True
     except Exception as e:
-        logger.error("falcordb_health_check_failed", error=str(e))
-        falcordb_healthy = False
+        logger.error("falkordb_health_check_failed", error=str(e))
+        falkordb_healthy = False
     
     # Check feature toggle service
     try:
@@ -31,15 +31,15 @@ async def health_check(request: Request):
         toggle_healthy = False
         llm_enabled = None
     
-    status = "healthy" if (falcordb_healthy and toggle_healthy) else "degraded"
+    status = "healthy" if (falkordb_healthy and toggle_healthy) else "degraded"
     
     return {
         "status": status,
         "service": "data-vent",
         "version": "0.1.0",
         "dependencies": {
-            "falcordb": {
-                "healthy": falcordb_healthy
+            "falkordb": {
+                "healthy": falkordb_healthy
             },
             "feature_toggle": {
                 "healthy": toggle_healthy,

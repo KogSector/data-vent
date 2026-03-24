@@ -34,8 +34,8 @@ cargo build --release
 
 # Set environment variables
 export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-export FALCORDB_HOST=localhost
-export FALCORDB_PORT=6379
+export FALKORDB_HOST=localhost
+export FALKORDB_PORT=6379
 
 # Run the service
 cargo run --bin data-vent
@@ -56,17 +56,19 @@ cargo run --bin data-vent
 |----------|----------|---------|-------------|
 | `PORT` | No | 8080 | Server port |
 | `KAFKA_BOOTSTRAP_SERVERS` | Yes | localhost:9092 | Kafka bootstrap servers |
-| `FALCORDB_HOST` | Yes | localhost | FalkorDB host |
-| `FALCORDB_PORT` | Yes | 6379 | FalkorDB port |
+| `FALKORDB_HOST` | Yes | localhost | FalkorDB host |
+| `FALKORDB_PORT` | Yes | 6379 | FalkorDB port |
 | `EXPORT_DIR` | No | ./exports | Export directory |
 
 ## Technology Stack
 
-- **Language**: Rust
-- **Web Framework**: Axum
+- **Language**: Python
+- **Web Framework**: FastAPI
 - **Streaming**: Kafka
-- **Database**: FalkorDB (for graph exports)
-- **Serialization**: Serde
+- **Database**: FalkorDB (Redis protocol)
+- **Graph Engine**: Graphiti with temporal features
+- **LLM**: Ollama (Llama3.2)
+- **Serialization**: JSON
 
 ## Integration
 

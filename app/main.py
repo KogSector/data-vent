@@ -1,8 +1,9 @@
-﻿"""
-Data Vent - Main Application Entry Point
-Intelligent retrieval engine with HTTP + gRPC servers.
-Direct query service: queries FalkorDB directly for search results.
 """
+Data Vent — Main Application Entry Point
+Intelligent retrieval engine with HTTP + gRPC servers.
+Uses Graphiti + FalkorDB for all semantic search and graph queries.
+"""
+
 import asyncio
 import time
 import structlog
@@ -14,6 +15,7 @@ from typing import List, Dict, Optional, Any
 import uvicorn
 
 from app.config import settings
+from app.services.graphiti_service import GraphitiService
 from app.services.intelligent_retriever import IntelligentRetriever
 from app.services.query_decomposer import QueryDecomposer
 from app.services.parallel_search import ParallelSearchDispatcher
@@ -24,6 +26,7 @@ logger = structlog.get_logger()
 
 # â”€â”€â”€ Global state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+_graphiti_service: GraphitiService = None
 _retriever: IntelligentRetriever = None
 _decomposer: QueryDecomposer = None
 _dispatcher: ParallelSearchDispatcher = None
@@ -50,18 +53,13 @@ async def lifespan(app: FastAPI):
                 grpc_port=settings.GRPC_PORT,
                 environment=settings.ENVIRONMENT)
     
-    # Initialize intelligent retriever
-    _retriever = IntelligentRetriever(
-        falcordb_uri=settings.FALCORDB_URI,
-        falcordb_username=settings.FALCORDB_USERNAME,
-        falcordb_password=settings.FALCORDB_PASSWORD,
-        embeddings_service_url=settings.EMBEDDINGS_SERVICE_URL,
-        vector_dimension=settings.FALCORDB_VECTOR_DIMENSION,
-        similarity_threshold=settings.FALCORDB_SIMILARITY_THRESHOLD,
-        max_results=settings.FALCORDB_MAX_RESULTS,
-    )
-    await _retriever.initialize()
-    
+    # Initialise Graphiti (FalkorDB via Redis protocol)
+    _graphiti_service = GraphitiService(settings)
+    await _graphiti_service.initialize()
+
+    # Wrap in IntelligentRetriever
+    _retriever = IntelligentRetriever(_graphiti_service)
+
     # Initialize pipeline components
     _decomposer = QueryDecomposer(
         max_chunks=settings.PIPELINE_MAX_QUERY_CHUNKS,
@@ -96,8 +94,8 @@ async def lifespan(app: FastAPI):
     
     # Cleanup
     logger.info("data_vent_shutting_down")
-    if _retriever:
-        await _retriever.close()
+    if _graphiti_service:
+        await _graphiti_service.close()
     grpc_task.cancel()
 
 
@@ -115,8 +113,8 @@ async def _start_grpc_background():
 # â”€â”€â”€ FastAPI app â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app = FastAPI(
-    title="Data Vent - Intelligent Retrieval Engine",
-    description="Semantic search, DFS traversal, and graph queries using FalkorDB",
+    title="Data Vent — Intelligent Retrieval Engine",
+    description="Semantic search and graph queries powered by Graphiti + FalkorDB",
     version="0.2.0",
     lifespan=lifespan,
 )
@@ -275,81 +273,49 @@ async def retrieve(request: RetrieveRequest):
 
 @app.post("/api/v1/search")
 async def search(request: dict):
-    """Vector similarity search (legacy endpoint)."""
+    """Semantic search via Graphiti hybrid retrieval."""
     retriever = get_retriever()
     if not retriever:
         return {"error": "Retriever not initialized"}, 503
-    
+
     query_text = request.get("query", "")
     limit = request.get("limit", 10)
     source_ids = request.get("source_ids")
-    
-    # Vectorize query
-    query_vectors = await retriever.vectorize_query(query_text)
-    if not query_vectors:
-        return {"error": "Failed to vectorize query"}, 500
-    
-    results = await retriever.vector_search(
-        query_vectors=query_vectors,
-        limit=limit,
-        source_ids=source_ids,
+
+    results = await retriever.retrieve(
+        query=query_text,
+        group_ids=source_ids,
+        num_results=limit,
     )
-    
+
     return {
-        "chunks": [
-            {
-                "chunk_id": r.chunk_id,
-                "content": r.content,
-                "score": r.score,
-                "chunk_type": r.chunk_type,
-                "source_id": r.source_id,
-            }
-            for r in results
-        ],
+        "chunks": [r.to_dict() for r in results],
         "total": len(results),
     }
 
 
 @app.post("/api/v1/hybrid-search")
 async def hybrid_search(request: dict):
-    """Hybrid search â€” vector + graph traversal (legacy endpoint)."""
+    """Hybrid search — Graphiti vector + BM25 + graph reranking."""
     retriever = get_retriever()
     if not retriever:
         return {"error": "Retriever not initialized"}, 503
-    
+
     query_text = request.get("query", "")
     limit = request.get("limit", 20)
-    dfs_depth = request.get("dfs_depth", 2)
     source_ids = request.get("source_ids")
-    
-    # Vectorize query
-    query_vectors = await retriever.vectorize_query(query_text)
-    if not query_vectors:
-        return {"error": "Failed to vectorize query"}, 500
-    
-    result = await retriever.hybrid_search(
-        query_text=query_text,
-        query_vectors=query_vectors,
-        limit=limit,
-        dfs_depth=dfs_depth,
-        source_ids=source_ids,
+    center_node_uuid = request.get("center_node_uuid")
+
+    results = await retriever.retrieve(
+        query=query_text,
+        group_ids=source_ids,
+        num_results=limit,
+        center_node_uuid=center_node_uuid,
     )
-    
+
     return {
-        "chunks": [
-            {
-                "chunk_id": r.chunk_id,
-                "content": r.content,
-                "score": r.score,
-                "chunk_type": r.chunk_type,
-                "source_id": r.source_id,
-            }
-            for r in result["chunks"]
-        ],
-        "vector_matches": result["vector_matches"],
-        "graph_matches": result["graph_matches"],
-        "completion_reached": result["completion_reached"],
-        "total_time_ms": result["total_time_ms"],
+        "chunks": [r.to_dict() for r in results],
+        "total": len(results),
     }
 
 
