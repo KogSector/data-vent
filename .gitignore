@@ -2,4 +2,4 @@
 .env.map
 .env.secret
 __pycache__
-docs/
+logs/
