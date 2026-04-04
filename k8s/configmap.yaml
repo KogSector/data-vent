@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: data-vent-config
+  namespace: confuse
+data:
+  # Service Configuration
+  PORT: "3040"
+  HOST: "0.0.0.0"
+  ENVIRONMENT: "production"
+  
+  # Service Dependencies
+  AUTH_MIDDLEWARE_URL: "http://auth-middleware:3010"
+  
+  # CORS Configuration
+  CORS_ORIGINS: "http://localhost:3000,https://confuse.platform.example.com"
+  
+  # Export Configuration
+  MAX_EXPORT_SIZE_MB: "500"
+  EXPORT_FORMATS: "json,csv,xlsx,parquet"
+  
+  # Streaming Configuration
+  STREAM_BATCH_SIZE: "1000"
+  STREAM_TIMEOUT_SECONDS: "300"
+  
+  # Cache Configuration
+  CACHE_TTL_SECONDS: "3600"
+  CACHE_MAX_SIZE_MB: "100"
+  
+  # Logging
+  LOG_LEVEL: "INFO"
+  
+  # Rate Limiting
+  RATE_LIMIT_REQUESTS_PER_MINUTE: "500"
+  RATE_LIMIT_BURST: "50"
