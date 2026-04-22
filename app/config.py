@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     FALKORDB_USERNAME: str = "default"
     FALKORDB_PASSWORD: str = ""
     FALKORDB_DATABASE: int = 0
-    FALKORDB_GRAPH_NAME: str = "confuse_knowledge"
+    FALKORDB_GRAPH_NAME: str = "knowledge-layer"
     FALKORDB_VECTOR_DIMENSION: int = 384
     FALKORDB_SIMILARITY_THRESHOLD: float = 0.75
     FALKORDB_MAX_RESULTS: int = 100
@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     GRAPHITI_LLM_MODEL: str = "llama3.2"
     GRAPHITI_LLM_ENDPOINT: str = "http://localhost:11434"
     GRAPHITI_EMBEDDING_DIM: int = 384
-    GRAPHITI_GROUP_ID: str = "confuse_knowledge"
+    GRAPHITI_GROUP_ID: str = "knowledge-layer"
 
     # ── Downstream Services ───────────────────────────────────────────────────
     EMBEDDINGS_GRPC_ADDR: str = "embeddings-service:50054"
