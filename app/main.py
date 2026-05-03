@@ -16,6 +16,7 @@ import uvicorn
 
 from app.config import settings
 from app.services.graphiti_service import GraphitiService
+from app.services.graphify_service import GraphifyService
 from app.services.intelligent_retriever import IntelligentRetriever
 from app.services.query_decomposer import QueryDecomposer
 from app.services.parallel_search import ParallelSearchDispatcher
@@ -27,6 +28,7 @@ logger = structlog.get_logger()
 # â”€â”€â”€ Global state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 _graphiti_service: GraphitiService = None
+_graphify_service: GraphifyService = None
 _retriever: IntelligentRetriever = None
 _decomposer: QueryDecomposer = None
 _dispatcher: ParallelSearchDispatcher = None
@@ -46,19 +48,26 @@ def get_pipeline():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager â€” initialize and cleanup services."""
-    global _retriever, _decomposer, _dispatcher, _aggregator
+    global _retriever, _decomposer, _dispatcher, _aggregator, _graphify_service
     
     logger.info("data_vent_starting",
                 port=settings.PORT,
                 grpc_port=settings.GRPC_PORT,
                 environment=settings.ENVIRONMENT)
     
-    # Initialise Graphiti (FalkorDB via Redis protocol)
+    # Initialise Graphiti (FalkorDB via Redis protocol) — legacy backend
     _graphiti_service = GraphitiService(settings)
     await _graphiti_service.initialize()
 
-    # Wrap in IntelligentRetriever
-    _retriever = IntelligentRetriever(_graphiti_service)
+    # Initialise Graphify — new backend (non-blocking, feature-flagged)
+    _graphify_service = GraphifyService(settings)
+    await _graphify_service.initialize()
+
+    # Wrap in IntelligentRetriever (dual-backend, flag-controlled)
+    _retriever = IntelligentRetriever(
+        graphiti_service=_graphiti_service,
+        graphify_service=_graphify_service,
+    )
 
     # Initialize pipeline components
     _decomposer = QueryDecomposer(
@@ -94,6 +103,8 @@ async def lifespan(app: FastAPI):
     
     # Cleanup
     logger.info("data_vent_shutting_down")
+    if _graphify_service:
+        await _graphify_service.close()
     if _graphiti_service:
         await _graphiti_service.close()
     grpc_task.cancel()

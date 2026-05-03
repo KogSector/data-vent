@@ -84,7 +84,8 @@ async def search_health_check():
     retriever = get_retriever()
     return {
         "status": "healthy" if retriever else "initialising",
-        "service": "graphiti_search",
+        "service": "search",
+        "active_backend": retriever.active_backend if retriever else "none",
         "timestamp": datetime.utcnow().isoformat(),
     }
 
@@ -92,17 +93,23 @@ async def search_health_check():
 @router.get("/")
 async def search_info():
     """Get information about search capabilities."""
+    retriever = get_retriever()
     return {
         "name": "Data-Vent Search Service",
-        "version": "2.0.0",
-        "backend": "Graphiti + FalkorDB",
+        "version": "3.0.0",
+        "active_backend": retriever.active_backend if retriever else "none",
+        "backends": {
+            "graphify": "Feature-flagged — hybrid vector + graph (new)",
+            "graphiti": "Legacy — hybrid vector + BM25 + graph via FalkorDB",
+        },
         "capabilities": [
-            "Hybrid vector + BM25 search (graphiti-core)",
+            "Hybrid vector + graph search (Graphify / Graphiti)",
             "Graph-aware entity-centred reranking",
             "Temporal knowledge graph queries",
+            "Automatic fallback from Graphify to Graphiti",
         ],
         "endpoints": [
-            {"path": "/search/semantic", "method": "POST", "description": "Semantic search via Graphiti"},
+            {"path": "/search/semantic", "method": "POST", "description": "Semantic search"},
             {"path": "/search/health", "method": "GET", "description": "Health check"},
             {"path": "/search/", "method": "GET", "description": "Service information"},
         ],

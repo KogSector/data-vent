@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     GRAPHITI_EMBEDDING_DIM: int = 384
     GRAPHITI_GROUP_ID: str = "knowledge-layer"
 
+    # ── Graphify (new backend — feature-flagged) ──────────────────────────────
+    GRAPHIFY_SERVICE_URL: str = "http://localhost:8100"
+    GRAPHIFY_TIMEOUT: float = 30.0
+    GRAPHIFY_RETRIEVAL_ENABLED: bool = False
+
     # ── Downstream Services ───────────────────────────────────────────────────
     EMBEDDINGS_GRPC_ADDR: str = "embeddings-service:50054"
     EMBEDDINGS_SERVICE_URL: str = "http://localhost:3001"
