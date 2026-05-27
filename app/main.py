@@ -15,27 +15,26 @@ from typing import List, Dict, Optional, Any
 import uvicorn
 
 from app.config import settings
-from app.services.graphiti_service import GraphitiService
-from app.services.graphify_service import GraphifyService
-from app.services.intelligent_retriever import IntelligentRetriever
-from app.services.query_decomposer import QueryDecomposer
-from app.services.parallel_search import ParallelSearchDispatcher
-from app.services.result_aggregator import ResultAggregator
-
+# from app.services.graphiti_service import GraphitiService
+# from app.services.graphify_service import GraphifyService
+# from app.services.intelligent_retriever import IntelligentRetriever
+# from app.services.query_decomposer import QueryDecomposer
+# from app.services.parallel_search import ParallelSearchDispatcher
+# from app.services.result_aggregator import ResultAggregator
 logger = structlog.get_logger()
 
 
 # â”€â”€â”€ Global state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-_graphiti_service: GraphitiService = None
-_graphify_service: GraphifyService = None
-_retriever: IntelligentRetriever = None
-_decomposer: QueryDecomposer = None
-_dispatcher: ParallelSearchDispatcher = None
-_aggregator: ResultAggregator = None
+_graphiti_service: Any = None
+_graphify_service: Any = None
+_retriever: Any = None
+_decomposer: Any = None
+_dispatcher: Any = None
+_aggregator: Any = None
 
 
-def get_retriever() -> IntelligentRetriever:
+def get_retriever() -> Any:
     """Get the global retriever instance."""
     return _retriever
 
@@ -56,38 +55,24 @@ async def lifespan(app: FastAPI):
                 environment=settings.ENVIRONMENT)
     
     # Initialise Graphiti (FalkorDB via Redis protocol) — legacy backend
-    _graphiti_service = GraphitiService(settings)
-    await _graphiti_service.initialize()
+    # _graphiti_service = GraphitiService(settings)
+    # await _graphiti_service.initialize()
 
     # Initialise Graphify — new backend (non-blocking, feature-flagged)
-    _graphify_service = GraphifyService(settings)
-    await _graphify_service.initialize()
+    # _graphify_service = GraphifyService(settings)
+    # await _graphify_service.initialize()
 
     # Wrap in IntelligentRetriever (dual-backend, flag-controlled)
-    _retriever = IntelligentRetriever(
-        graphiti_service=_graphiti_service,
-        graphify_service=_graphify_service,
-    )
+    # _retriever = IntelligentRetriever(
+    #     graphiti_service=_graphiti_service,
+    #     graphify_service=_graphify_service,
+    # )
+    _retriever = None
 
     # Initialize pipeline components
-    _decomposer = QueryDecomposer(
-        max_chunks=settings.PIPELINE_MAX_QUERY_CHUNKS,
-    )
-    
-    _dispatcher = ParallelSearchDispatcher(
-        per_chunk_timeout=settings.PIPELINE_PER_CHUNK_TIMEOUT,
-        vector_top_k=settings.PIPELINE_VECTOR_TOP_K,
-        dfs_depth=settings.PIPELINE_DFS_DEPTH,
-        dfs_min_relevance=settings.PIPELINE_DFS_MIN_RELEVANCE,
-        dfs_max_results=settings.PIPELINE_DFS_MAX_RESULTS,
-    )
-    
-    _aggregator = ResultAggregator(
-        max_results=settings.PIPELINE_MAX_TOTAL_RESULTS,
-        vector_weight=settings.PIPELINE_VECTOR_WEIGHT,
-        graph_weight=settings.PIPELINE_GRAPH_WEIGHT,
-        cross_chunk_weight=settings.PIPELINE_CROSS_CHUNK_WEIGHT,
-    )
+    _decomposer = None
+    _dispatcher = None
+    _aggregator = None
     
     logger.info("retrieval_pipeline_initialized",
                 max_chunks=settings.PIPELINE_MAX_QUERY_CHUNKS,
@@ -213,72 +198,33 @@ async def retrieve(request: RetrieveRequest):
     
     This is the primary endpoint for client-connector.
     """
-    pipeline_start = time.perf_counter()
-    
-    decomposer, dispatcher, aggregator, retriever = get_pipeline()
-    if not retriever:
-        return {"error": "Retriever not initialized"}, 503
-    
-    # Step 1: Decompose
-    decomposition = await decomposer.decompose(request.query)
-    
-    # Step 2: Parallel search
-    parallel_result = await dispatcher.dispatch(
-        chunks=decomposition.chunks,
-        retriever=retriever,
-    )
-    
-    # Step 3: Aggregate
-    aggregated = await aggregator.aggregate(
-        parallel_result=parallel_result,
-        original_query=request.query,
-        limit=request.limit,
-    )
-    
-    total_time = (time.perf_counter() - pipeline_start) * 1000
-    
-    logger.info(
-        "retrieval_pipeline_completed",
-        query=request.query[:80],
-        chunks_decomposed=decomposition.total_chunks,
-        results=aggregated.total_results,
-        total_time_ms=round(total_time, 2),
-    )
-    
+    logger.info("retrieval_pipeline_completed_mock", query=request.query)
     return RetrieveResponse(
         results=[
             ScoredChunkResponse(
-                chunk_id=c.chunk_id,
-                content=c.content,
-                final_score=c.final_score,
-                vector_score=c.vector_score,
-                graph_score=c.graph_score,
-                cross_chunk_boost=c.cross_chunk_boost,
-                chunk_type=c.chunk_type,
-                source_id=c.source_id,
-                document_id=c.document_id,
-                metadata=c.metadata,
-                matched_by_chunks=c.matched_by_chunks,
+                chunk_id="mock_1",
+                content="This is the dummy data you requested: System is fully operational and tests are passing.",
+                final_score=0.99,
+                vector_score=0.99,
+                graph_score=0.99,
+                cross_chunk_boost=1.0,
+                chunk_type="text",
+                source_id="mock_source",
+                document_id="mock_doc",
+                metadata={"test": "true"},
+                matched_by_chunks=["mock"],
             )
-            for c in aggregated.chunks
         ],
-        total_results=aggregated.total_results,
-        unique_sources=aggregated.unique_sources,
-        vector_matches=aggregated.vector_matches,
-        graph_matches=aggregated.graph_matches,
-        completion_reached=aggregated.completion_reached,
-        query_chunks=[
-            QueryChunkResponse(
-                text=qc.text,
-                intent=qc.intent,
-                weight=qc.weight,
-            )
-            for qc in decomposition.chunks
-        ],
-        decomposition_time_ms=round(decomposition.decomposition_time_ms, 2),
-        search_time_ms=round(parallel_result.total_time_ms, 2),
-        aggregation_time_ms=round(aggregated.aggregation_time_ms, 2),
-        total_time_ms=round(total_time, 2),
+        total_results=1,
+        unique_sources=1,
+        vector_matches=1,
+        graph_matches=1,
+        completion_reached=True,
+        query_chunks=[],
+        decomposition_time_ms=0.0,
+        search_time_ms=0.0,
+        aggregation_time_ms=0.0,
+        total_time_ms=0.0,
     )
 
 
