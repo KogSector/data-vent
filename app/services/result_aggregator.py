@@ -7,10 +7,9 @@ Handles deduplication, score fusion, cross-chunk boosting, and completion checki
 
 import structlog
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any, Set
-from collections import Counter
-
-from app.services.intelligent_retriever import ChunkNode
+from typing import List, Dict, Set, Optional, Any
+from collections import defaultdict
+from app.services.intelligent_retriever import SearchResult as ChunkNode
 from app.services.parallel_search import ChunkSearchResult, ParallelSearchResult
 
 logger = structlog.get_logger()

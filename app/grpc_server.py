@@ -10,7 +10,7 @@ from concurrent import futures
 import structlog
 
 from app.config import settings
-from app.services.intelligent_retriever import IntelligentRetriever, ChunkNode
+from app.services.intelligent_retriever import IntelligentRetriever
 from app.services.query_decomposer import QueryDecomposer
 from app.services.parallel_search import ParallelSearchDispatcher
 from app.services.result_aggregator import ResultAggregator

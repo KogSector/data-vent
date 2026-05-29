@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Any
 
 from app.services.query_decomposer import QueryChunk
-from app.services.intelligent_retriever import IntelligentRetriever, ChunkNode
+from app.services.intelligent_retriever import IntelligentRetriever, SearchResult as ChunkNode
 
 logger = structlog.get_logger()
 
