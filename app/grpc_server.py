@@ -113,7 +113,7 @@ class RetrievalServicer:
         )
     
     async def Search(self, request, context):
-        """Handle semantic search via Graphiti."""
+        """Handle semantic search via Graphify."""
         results = await self.retriever.retrieve(
             query=request.query_text if hasattr(request, "query_text") else "",
             num_results=request.limit or 10,
@@ -122,10 +122,10 @@ class RetrievalServicer:
 
         chunks = [
             retrieval_pb2.RetrievedChunk(
-                chunk_id=r.metadata.get("uuid", ""),
+                chunk_id=r.metadata.get("id", ""),
                 content=r.content,
                 score=r.score,
-                chunk_type="graphiti",
+                chunk_type="graphify",
                 source_id="",
                 document_id="",
                 metadata=r.metadata,
@@ -140,7 +140,7 @@ class RetrievalServicer:
         )
     
     async def DFSTraverse(self, request, context):
-        """Graph-aware traversal via Graphiti centre-node search."""
+        """Graph-aware traversal via Graphify centre-node search."""
         results = await self.retriever.retrieve_with_context(
             query=getattr(request, "query_text", ""),
             entity_uuid=list(request.start_chunk_ids)[0] if getattr(request, "start_chunk_ids", None) else "",
@@ -149,10 +149,10 @@ class RetrievalServicer:
 
         chunks = [
             retrieval_pb2.RetrievedChunk(
-                chunk_id=r.metadata.get("uuid", ""),
+                chunk_id=r.metadata.get("id", ""),
                 content=r.content,
                 score=r.score,
-                chunk_type="graphiti",
+                chunk_type="graphify",
                 source_id="",
                 document_id="",
                 metadata=r.metadata,
@@ -168,7 +168,7 @@ class RetrievalServicer:
         )
 
     async def HybridSearch(self, request, context):
-        """Hybrid search via Graphiti (vector + BM25 + graph)."""
+        """Hybrid search via Graphify (vector + graph)."""
         results = await self.retriever.retrieve(
             query=getattr(request, "query_text", ""),
             num_results=getattr(request, "limit", 20) or 20,
@@ -177,10 +177,10 @@ class RetrievalServicer:
 
         chunks = [
             retrieval_pb2.RetrievedChunk(
-                chunk_id=r.metadata.get("uuid", ""),
+                chunk_id=r.metadata.get("id", ""),
                 content=r.content,
                 score=r.score,
-                chunk_type="graphiti",
+                chunk_type="graphify",
                 source_id="",
                 document_id="",
                 metadata=r.metadata,

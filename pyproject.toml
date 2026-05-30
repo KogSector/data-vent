@@ -1,14 +1,13 @@
 [project]
 name = "data-vent"
 version = "0.1.0"
-description = "Intelligent retrieval engine — semantic search and graph queries using Graphiti + FalkorDB"
+description = "Intelligent retrieval engine — semantic search and graph queries"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.109.0",
     "uvicorn[standard]>=0.27.0",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
-    "graphiti-core[falkordb]>=0.26.0",
     "redis>=5.10.0",
     "httpx>=0.26.0",
     "python-dotenv>=1.0.0",

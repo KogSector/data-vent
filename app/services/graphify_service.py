@@ -4,7 +4,7 @@ Data Vent — Graphify Knowledge Graph Service
 Adapter service for the Graphify knowledge graph API.
 Provides episode ingestion and hybrid search (vector + graph) capabilities.
 
-This service runs alongside GraphitiService during the migration period.
+This service acts as the primary Graphify engine.
 Feature flag `graphifyRetrievalEnabled` controls which backend handles queries.
 
 Graphify API contract:

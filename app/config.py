@@ -26,12 +26,6 @@ class Settings(BaseSettings):
     FALKORDB_SIMILARITY_THRESHOLD: float = 0.75
     FALKORDB_MAX_RESULTS: int = 100
 
-    # ── Graphiti / LLM ─────────────────────────────────────────────────────────
-    GRAPHITI_LLM_PROVIDER: str = "ollama"
-    GRAPHITI_LLM_MODEL: str = "llama3.2"
-    GRAPHITI_LLM_ENDPOINT: str = "http://localhost:11434"
-    GRAPHITI_EMBEDDING_DIM: int = 384
-    GRAPHITI_GROUP_ID: str = "knowledge-layer"
 
     # ── Graphify (new backend — feature-flagged) ──────────────────────────────
     GRAPHIFY_SERVICE_URL: str = "http://localhost:8100"

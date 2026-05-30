@@ -1,13 +1,7 @@
 """
 Data Vent — Intelligent Retriever
 
-Feature-flagged retrieval engine that routes queries to either:
-- Graphify (new) — hybrid vector + graph search via HTTP API
-- Graphiti (legacy) — hybrid vector + BM25 + graph via graphiti-core + FalkorDB
-
-Feature flag: `GRAPHIFY_RETRIEVAL_ENABLED`
-- When enabled: queries go to GraphifyService
-- When disabled (default): queries go to GraphitiService (existing behaviour)
+Retrieval engine that routes queries to Graphify.
 """
 
 from __future__ import annotations
@@ -17,21 +11,18 @@ from typing import Any
 
 import structlog
 
-from app.services.graphiti_service import GraphitiService
-
 logger = structlog.get_logger(__name__)
 
-# Metadata keys extracted once for Graphify results — avoids
-# re-creating the same tuple on every search call.
+# Metadata keys extracted once for Graphify results
 _GRAPHIFY_META_KEYS = ("id", "source_type", "source_id", "chunk_type", "content_path", "language")
 
 
 class SearchResult:
-    """Normalised retrieval result (backend-agnostic)."""
+    """Normalised retrieval result."""
 
     __slots__ = ("content", "score", "metadata", "source")
 
-    def __init__(self, content: str, score: float, metadata: dict[str, Any], source: str = "graphiti") -> None:
+    def __init__(self, content: str, score: float, metadata: dict[str, Any], source: str = "graphify") -> None:
         self.content = content
         self.score = score
         self.metadata = metadata
@@ -43,32 +34,18 @@ class SearchResult:
 
 class IntelligentRetriever:
     """
-    Retrieval engine with feature-flagged backend selection.
-
-    Supports two backends:
-    - **Graphify** (new): HTTP-based hybrid search via GraphifyService
-    - **Graphiti** (legacy): graphiti-core + FalkorDB
-
-    The active backend is selected by the ``GRAPHIFY_RETRIEVAL_ENABLED`` env var.
-    When the flag is disabled or the Graphify service is unavailable, queries
-    automatically fall back to Graphiti.
+    Retrieval engine using GraphifyService.
     """
 
-    __slots__ = ("_graphiti", "_graphify", "_graphify_enabled")
+    __slots__ = ("_graphify",)
 
-    def __init__(self, graphiti_service: GraphitiService, graphify_service: Any | None = None) -> None:
-        self._graphiti = graphiti_service
+    def __init__(self, graphify_service: Any | None = None) -> None:
         self._graphify = graphify_service
-        self._graphify_enabled: bool = os.environ.get(
-            "GRAPHIFY_RETRIEVAL_ENABLED", "false"
-        ).lower() in ("true", "1", "yes")
 
     @property
     def active_backend(self) -> str:
         """Return the name of the currently active retrieval backend."""
-        if self._graphify_enabled and self._graphify and self._graphify.is_available:
-            return "graphify"
-        return "graphiti"
+        return "graphify"
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -80,20 +57,19 @@ class IntelligentRetriever:
         center_node_uuid: str | None = None,
     ) -> list[SearchResult]:
         """
-        Retrieve relevant knowledge from the active backend.
-
-        Tries Graphify first (if enabled + available), falls back to Graphiti.
+        Retrieve relevant knowledge from Graphify.
         """
-        backend = self.active_backend
-        logger.info("retriever_search", query=query[:80], backend=backend)
+        logger.info("retriever_search", query=query[:80], backend="graphify")
 
-        if backend == "graphify":
-            try:
-                return await self._retrieve_graphify(query, group_ids, num_results, center_node_uuid)
-            except Exception as exc:
-                logger.warning("graphify_retrieval_fallback", error=str(exc))
-
-        return await self._retrieve_graphiti(query, group_ids, num_results, center_node_uuid)
+        if not self._graphify:
+            logger.error("Graphify service is not configured")
+            return []
+            
+        try:
+            return await self._retrieve_graphify(query, group_ids, num_results, center_node_uuid)
+        except Exception as exc:
+            logger.warning("graphify_retrieval_failed", error=str(exc))
+            return []
 
     async def retrieve_with_context(
         self,
@@ -123,28 +99,4 @@ class IntelligentRetriever:
             for r in raw
         ]
         logger.info("retriever_search_done", result_count=len(results), backend="graphify")
-        return results
-
-    # ── Private: Graphiti (legacy) ────────────────────────────────────────────
-
-    async def _retrieve_graphiti(
-        self, query: str, group_ids: list[str] | None, num_results: int, center_node_uuid: str | None,
-    ) -> list[SearchResult]:
-        raw = await self._graphiti.search(
-            query=query, group_ids=group_ids, center_node_uuid=center_node_uuid, num_results=num_results,
-        )
-        results = [
-            SearchResult(
-                content=getattr(r, "fact", "") or getattr(r, "content", ""),
-                score=float(getattr(r, "score", 0.0) or 0.0),
-                metadata={
-                    "uuid": getattr(r, "uuid", None),
-                    "name": getattr(r, "name", None),
-                    "created_at": str(getattr(r, "created_at", "")),
-                    "valid_at": str(getattr(r, "valid_at", "")),
-                },
-            )
-            for r in raw
-        ]
-        logger.info("retriever_search_done", result_count=len(results), backend="graphiti")
         return results

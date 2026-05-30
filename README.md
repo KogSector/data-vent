@@ -66,7 +66,7 @@ cargo run --bin data-vent
 - **Web Framework**: FastAPI
 - **Streaming**: Kafka
 - **Database**: FalkorDB (Redis protocol)
-- **Graph Engine**: Graphiti with temporal features
+- **Graph Engine**: Graphify with temporal features
 - **LLM**: Ollama (Llama3.2)
 - **Serialization**: JSON
 

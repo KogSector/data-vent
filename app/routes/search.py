@@ -1,9 +1,8 @@
 """
 Data Vent — Search Routes
 
-Search endpoints backed by Graphiti (vector + BM25 + graph retrieval).
-The old VectorSearchService / FalcorDBConfig classes have been removed;
-all search is now delegated to IntelligentRetriever → GraphitiService.
+Search endpoints backed by Graphify (vector + graph retrieval).
+all search is now delegated to IntelligentRetriever → GraphifyService.
 """
 
 from datetime import datetime
@@ -22,7 +21,7 @@ router = APIRouter(prefix="/search", tags=["search"])
 # ── Request / Response models ─────────────────────────────────────────────────
 
 class SemanticSearchRequest(BaseModel):
-    """Request model for Graphiti semantic search."""
+    """Request model for Graphify semantic search."""
     query: str = Field(..., description="Natural language query")
     limit: int = Field(default=10, ge=1, le=200, description="Maximum results")
     group_ids: Optional[list[str]] = Field(default=None, description="Restrict to graph groups / source IDs")
@@ -47,7 +46,7 @@ class SemanticSearchResponse(BaseModel):
 @router.post("/semantic", response_model=SemanticSearchResponse)
 async def semantic_search(request: SemanticSearchRequest):
     """
-    Semantic search using Graphiti hybrid vector + BM25 + graph retrieval.
+    Semantic search using Graphify hybrid vector + graph retrieval.
 
     Optionally rerank results around a known entity node (center_node_uuid)
     for graph-aware context propagation.
@@ -99,14 +98,12 @@ async def search_info():
         "version": "3.0.0",
         "active_backend": retriever.active_backend if retriever else "none",
         "backends": {
-            "graphify": "Feature-flagged — hybrid vector + graph (new)",
-            "graphiti": "Legacy — hybrid vector + BM25 + graph via FalkorDB",
+            "graphify": "Hybrid vector + graph (new)",
         },
         "capabilities": [
-            "Hybrid vector + graph search (Graphify / Graphiti)",
+            "Hybrid vector + graph search (Graphify)",
             "Graph-aware entity-centred reranking",
             "Temporal knowledge graph queries",
-            "Automatic fallback from Graphify to Graphiti",
         ],
         "endpoints": [
             {"path": "/search/semantic", "method": "POST", "description": "Semantic search"},

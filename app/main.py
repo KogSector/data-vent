@@ -1,7 +1,7 @@
 """
 Data Vent — Main Application Entry Point
 Intelligent retrieval engine with HTTP + gRPC servers.
-Uses Graphiti + FalkorDB for all semantic search and graph queries.
+Uses Graphify + FalkorDB for semantic search and graph queries.
 """
 
 import asyncio
@@ -15,7 +15,6 @@ from typing import List, Dict, Optional, Any
 import uvicorn
 
 from app.config import settings
-# from app.services.graphiti_service import GraphitiService
 # from app.services.graphify_service import GraphifyService
 # from app.services.intelligent_retriever import IntelligentRetriever
 # from app.services.query_decomposer import QueryDecomposer
@@ -26,7 +25,6 @@ logger = structlog.get_logger()
 
 # â”€â”€â”€ Global state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-_graphiti_service: Any = None
 _graphify_service: Any = None
 _retriever: Any = None
 _decomposer: Any = None
@@ -54,17 +52,12 @@ async def lifespan(app: FastAPI):
                 grpc_port=settings.GRPC_PORT,
                 environment=settings.ENVIRONMENT)
     
-    # Initialise Graphiti (FalkorDB via Redis protocol) — legacy backend
-    # _graphiti_service = GraphitiService(settings)
-    # await _graphiti_service.initialize()
-
     # Initialise Graphify — new backend (non-blocking, feature-flagged)
     # _graphify_service = GraphifyService(settings)
     # await _graphify_service.initialize()
 
     # Wrap in IntelligentRetriever (dual-backend, flag-controlled)
     # _retriever = IntelligentRetriever(
-    #     graphiti_service=_graphiti_service,
     #     graphify_service=_graphify_service,
     # )
     _retriever = None
@@ -90,8 +83,6 @@ async def lifespan(app: FastAPI):
     logger.info("data_vent_shutting_down")
     if _graphify_service:
         await _graphify_service.close()
-    if _graphiti_service:
-        await _graphiti_service.close()
     grpc_task.cancel()
 
 
@@ -110,7 +101,7 @@ async def _start_grpc_background():
 
 app = FastAPI(
     title="Data Vent — Intelligent Retrieval Engine",
-    description="Semantic search and graph queries powered by Graphiti + FalkorDB",
+    description="Semantic search and graph queries powered by Graphify + FalkorDB",
     version="0.2.0",
     lifespan=lifespan,
 )
@@ -230,7 +221,7 @@ async def retrieve(request: RetrieveRequest):
 
 @app.post("/api/v1/search")
 async def search(request: dict):
-    """Semantic search via Graphiti hybrid retrieval."""
+    """Semantic search via Graphify hybrid retrieval."""
     retriever = get_retriever()
     if not retriever:
         return {"error": "Retriever not initialized"}, 503
@@ -253,7 +244,7 @@ async def search(request: dict):
 
 @app.post("/api/v1/hybrid-search")
 async def hybrid_search(request: dict):
-    """Hybrid search — Graphiti vector + BM25 + graph reranking."""
+    """Hybrid search — Graphify vector + BM25 + graph reranking."""
     retriever = get_retriever()
     if not retriever:
         return {"error": "Retriever not initialized"}, 503
@@ -276,10 +267,8 @@ async def hybrid_search(request: dict):
     }
 
 
-# Include routes from existing routers if they exist
 try:
-    from app.routes import graphiti, status
-    app.include_router(graphiti.router, prefix="/api/v1/graphiti", tags=["graphiti"])
+    from app.routes import status
     app.include_router(status.router, prefix="/api/v1/status", tags=["status"])
 except ImportError:
     logger.info("optional_routers_not_found")

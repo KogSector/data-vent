@@ -4,7 +4,7 @@ Data Vent — FalkorDB direct query utilities.
 Provides low-level access to FalkorDB via the Redis protocol
 for raw Cypher queries (e.g. administrative inspection, index management).
 
-For all retrieval use-cases, prefer GraphitiService which handles
+For all retrieval use-cases, prefer GraphifyService which handles
 entity/relationship aware hybrid search automatically.
 """
 
@@ -23,7 +23,7 @@ class FalkorDBClient:
     Thin Redis-protocol client for direct GRAPH.QUERY access.
 
     Use this only for raw administrative Cypher queries.
-    All semantic search should go through GraphitiService.
+    All semantic search should go through GraphifyService.
     """
 
     def __init__(
