@@ -15,11 +15,11 @@ from typing import List, Dict, Optional, Any
 import uvicorn
 
 from app.config import settings
-# from app.services.graphify_service import GraphifyService
-# from app.services.intelligent_retriever import IntelligentRetriever
-# from app.services.query_decomposer import QueryDecomposer
-# from app.services.parallel_search import ParallelSearchDispatcher
-# from app.services.result_aggregator import ResultAggregator
+from app.services.vector_search import build_client_from_settings
+from app.services.intelligent_retriever import IntelligentRetriever
+from app.services.query_decomposer import QueryDecomposer, QueryChunk
+from app.services.parallel_search import ParallelSearchDispatcher
+from app.services.result_aggregator import ResultAggregator
 logger = structlog.get_logger()
 
 
@@ -52,20 +52,28 @@ async def lifespan(app: FastAPI):
                 grpc_port=settings.GRPC_PORT,
                 environment=settings.ENVIRONMENT)
     
-    # Initialise Graphify — new backend (non-blocking, feature-flagged)
-    # _graphify_service = GraphifyService(settings)
-    # await _graphify_service.initialize()
+    # Initialise FalkorDB
+    falkordb_client = build_client_from_settings(settings)
+    await falkordb_client.connect()
 
-    # Wrap in IntelligentRetriever (dual-backend, flag-controlled)
-    # _retriever = IntelligentRetriever(
-    #     graphify_service=_graphify_service,
-    # )
-    _retriever = None
+    # Wrap in IntelligentRetriever
+    _retriever = IntelligentRetriever(falkordb_client=falkordb_client, settings=settings)
 
     # Initialize pipeline components
-    _decomposer = None
-    _dispatcher = None
-    _aggregator = None
+    _decomposer = QueryDecomposer(max_chunks=settings.PIPELINE_MAX_QUERY_CHUNKS)
+    _dispatcher = ParallelSearchDispatcher(
+        per_chunk_timeout=settings.PIPELINE_PER_CHUNK_TIMEOUT,
+        vector_top_k=settings.PIPELINE_VECTOR_TOP_K,
+        dfs_depth=settings.PIPELINE_DFS_DEPTH,
+        dfs_min_relevance=settings.PIPELINE_DFS_MIN_RELEVANCE,
+        dfs_max_results=settings.PIPELINE_DFS_MAX_RESULTS,
+    )
+    _aggregator = ResultAggregator(
+        max_results=settings.PIPELINE_MAX_TOTAL_RESULTS,
+        vector_weight=settings.PIPELINE_VECTOR_WEIGHT,
+        graph_weight=settings.PIPELINE_GRAPH_WEIGHT,
+        cross_chunk_weight=settings.PIPELINE_CROSS_CHUNK_WEIGHT,
+    )
     
     logger.info("retrieval_pipeline_initialized",
                 max_chunks=settings.PIPELINE_MAX_QUERY_CHUNKS,
@@ -81,8 +89,8 @@ async def lifespan(app: FastAPI):
     
     # Cleanup
     logger.info("data_vent_shutting_down")
-    if _graphify_service:
-        await _graphify_service.close()
+    await _retriever.close()
+    await falkordb_client.close()
     grpc_task.cancel()
 
 
@@ -189,33 +197,58 @@ async def retrieve(request: RetrieveRequest):
     
     This is the primary endpoint for client-connector.
     """
-    logger.info("retrieval_pipeline_completed_mock", query=request.query)
+    if not _retriever or not _decomposer or not _dispatcher or not _aggregator:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=503, detail="Pipeline components not initialized")
+
+    start_time = time.perf_counter()
+    
+    # 1. Decompose
+    decomp_result = await _decomposer.decompose(request.query)
+    
+    # 2. Parallel Search
+    search_result = await _dispatcher.dispatch(decomp_result.chunks, _retriever)
+    
+    # 3. Aggregate
+    agg_result = await _aggregator.aggregate(search_result, original_query=request.query, limit=request.limit)
+    
+    total_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
+    
+    results = [
+        ScoredChunkResponse(
+            chunk_id=c.chunk_id,
+            content=c.content,
+            final_score=c.final_score,
+            vector_score=c.vector_score,
+            graph_score=c.graph_score,
+            cross_chunk_boost=c.cross_chunk_boost,
+            chunk_type=c.chunk_type,
+            source_id=c.source_id,
+            document_id=c.document_id,
+            metadata=c.metadata,
+            matched_by_chunks=c.matched_by_chunks,
+        ) for c in agg_result.chunks
+    ]
+    
+    query_chunks = [
+        QueryChunkResponse(text=c.text, intent=c.intent, weight=c.weight)
+        for c in decomp_result.chunks
+    ]
+    
+    logger.info("retrieval_pipeline_completed", query=request.query, total_results=len(results), total_time_ms=total_time_ms)
+    
     return RetrieveResponse(
-        results=[
-            ScoredChunkResponse(
-                chunk_id="mock_1",
-                content="This is the dummy data you requested: System is fully operational and tests are passing.",
-                final_score=0.99,
-                vector_score=0.99,
-                graph_score=0.99,
-                cross_chunk_boost=1.0,
-                chunk_type="text",
-                source_id="mock_source",
-                document_id="mock_doc",
-                metadata={"test": "true"},
-                matched_by_chunks=["mock"],
-            )
-        ],
-        total_results=1,
-        unique_sources=1,
-        vector_matches=1,
-        graph_matches=1,
-        completion_reached=True,
-        query_chunks=[],
-        decomposition_time_ms=0.0,
-        search_time_ms=0.0,
-        aggregation_time_ms=0.0,
-        total_time_ms=0.0,
+        results=results,
+        total_results=agg_result.total_results,
+        unique_sources=agg_result.unique_sources,
+        vector_matches=agg_result.vector_matches,
+        graph_matches=agg_result.graph_matches,
+        completion_reached=agg_result.completion_reached,
+        query_chunks=query_chunks,
+        decomposition_time_ms=decomp_result.decomposition_time_ms,
+        search_time_ms=search_result.total_time_ms,
+        aggregation_time_ms=agg_result.aggregation_time_ms,
+        total_time_ms=total_time_ms,
     )
 
 
