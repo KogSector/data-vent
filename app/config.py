@@ -28,9 +28,7 @@ class Settings(BaseSettings):
 
 
     # ── Graphify (new backend — feature-flagged) ──────────────────────────────
-    GRAPHIFY_SERVICE_URL: str = "http://localhost:8100"
-    GRAPHIFY_TIMEOUT: float = 30.0
-    GRAPHIFY_RETRIEVAL_ENABLED: bool = False
+    # Removed as Graphify is deprecated
 
     # ── Downstream Services ───────────────────────────────────────────────────
     EMBEDDINGS_GRPC_ADDR: str = "embeddings-service:50054"

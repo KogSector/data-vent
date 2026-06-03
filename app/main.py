@@ -6,9 +6,10 @@ Uses Graphify + FalkorDB for semantic search and graph queries.
 
 import asyncio
 import time
+import uuid
 import structlog
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Any
@@ -20,12 +21,32 @@ from app.services.intelligent_retriever import IntelligentRetriever
 from app.services.query_decomposer import QueryDecomposer, QueryChunk
 from app.services.parallel_search import ParallelSearchDispatcher
 from app.services.result_aggregator import ResultAggregator
+
+# Configure structured logging
+structlog.configure(
+    processors=[
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.UnicodeDecoder(),
+        structlog.processors.JSONRenderer(),
+    ],
+    wrapper_class=structlog.stdlib.BoundLogger,
+    context_class=dict,
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    cache_logger_on_first_use=True,
+)
+
 logger = structlog.get_logger()
 
 
-# â”€â”€â”€ Global state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Global state ────────────────────────────────────────────────────────────────
 
-_graphify_service: Any = None
 _retriever: Any = None
 _decomposer: Any = None
 _dispatcher: Any = None
@@ -44,8 +65,8 @@ def get_pipeline():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager â€” initialize and cleanup services."""
-    global _retriever, _decomposer, _dispatcher, _aggregator, _graphify_service
+    """Application lifespan manager — initialize and cleanup services."""
+    global _retriever, _decomposer, _dispatcher, _aggregator
     
     logger.info("data_vent_starting",
                 port=settings.PORT,
@@ -109,7 +130,7 @@ async def _start_grpc_background():
 
 app = FastAPI(
     title="Data Vent — Intelligent Retrieval Engine",
-    description="Semantic search and graph queries powered by Graphify + FalkorDB",
+    description="Semantic search and graph queries powered by FalkorDB",
     version="0.2.0",
     lifespan=lifespan,
 )
@@ -188,7 +209,7 @@ async def health_check():
 
 
 @app.post("/api/v1/retrieve", response_model=RetrieveResponse)
-async def retrieve(request: RetrieveRequest):
+async def retrieve(request: RetrieveRequest, req: Request):
     """
     Full retrieval pipeline:
     1. Decompose query into semantic chunks
@@ -201,16 +222,23 @@ async def retrieve(request: RetrieveRequest):
         from fastapi import HTTPException
         raise HTTPException(status_code=503, detail="Pipeline components not initialized")
 
+    request_id = req.headers.get("x-request-id", str(uuid.uuid4()))
+    structlog.contextvars.bind_contextvars(request_id=request_id)
+    logger.info("retrieval_request_received", query=request.query, limit=request.limit, source_ids=request.source_ids)
+
     start_time = time.perf_counter()
     
     # 1. Decompose
     decomp_result = await _decomposer.decompose(request.query)
+    logger.info("query_decomposed", chunks_count=len(decomp_result.chunks), decomposition_time_ms=decomp_result.decomposition_time_ms)
     
     # 2. Parallel Search
     search_result = await _dispatcher.dispatch(decomp_result.chunks, _retriever)
+    logger.info("parallel_search_completed", search_time_ms=search_result.total_time_ms)
     
     # 3. Aggregate
     agg_result = await _aggregator.aggregate(search_result, original_query=request.query, limit=request.limit)
+    logger.info("results_aggregated", aggregation_time_ms=agg_result.aggregation_time_ms)
     
     total_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
     
@@ -254,7 +282,7 @@ async def retrieve(request: RetrieveRequest):
 
 @app.post("/api/v1/search")
 async def search(request: dict):
-    """Semantic search via Graphify hybrid retrieval."""
+    """Semantic search via IntelligentRetriever."""
     retriever = get_retriever()
     if not retriever:
         return {"error": "Retriever not initialized"}, 503
@@ -277,7 +305,7 @@ async def search(request: dict):
 
 @app.post("/api/v1/hybrid-search")
 async def hybrid_search(request: dict):
-    """Hybrid search — Graphify vector + BM25 + graph reranking."""
+    """Hybrid search — vector + BM25 + graph reranking."""
     retriever = get_retriever()
     if not retriever:
         return {"error": "Retriever not initialized"}, 503
@@ -305,14 +333,6 @@ try:
     app.include_router(status.router, prefix="/api/v1/status", tags=["status"])
 except ImportError:
     logger.info("optional_routers_not_found")
-
-# Include the new enhanced search routes
-try:
-    from app.routes.search import router as search_router
-    app.include_router(search_router, tags=["enhanced-search"])
-    logger.info("enhanced_search_routes_loaded")
-except ImportError:
-    logger.warning("enhanced_search_routes_not_found")
 
 
 if __name__ == "__main__":

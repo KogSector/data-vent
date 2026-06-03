@@ -3,9 +3,6 @@ Data Vent — FalkorDB direct query utilities.
 
 Provides low-level access to FalkorDB via the Redis protocol
 for raw Cypher queries (e.g. administrative inspection, index management).
-
-For all retrieval use-cases, prefer GraphifyService which handles
-entity/relationship aware hybrid search automatically.
 """
 
 from __future__ import annotations
@@ -23,7 +20,6 @@ class FalkorDBClient:
     Thin Redis-protocol client for direct GRAPH.QUERY access.
 
     Use this only for raw administrative Cypher queries.
-    All semantic search should go through GraphifyService.
     """
 
     def __init__(
@@ -51,7 +47,7 @@ class FalkorDBClient:
             decode_responses=True,
         )
         # Ping to verify connectivity
-        await self._client.ping()
+        await self._client.ping()  # type: ignore
         logger.info(
             "falkordb_client_connected",
             host=self._host,

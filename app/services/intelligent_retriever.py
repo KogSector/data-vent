@@ -70,7 +70,7 @@ class IntelligentRetriever:
         try:
             response = await self._http_client.post(
                 f"{self.embeddings_service_url}/api/v1/generate",
-                json={"text": query}
+                json={"text": query, "model": "nomic-embed-text:latest"}
             )
             response.raise_for_status()
             data = response.json()
