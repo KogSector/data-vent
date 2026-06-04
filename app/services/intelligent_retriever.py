@@ -102,6 +102,39 @@ class IntelligentRetriever:
             logger.error("vector_search_failed", error=str(e))
             return []
 
+    async def text_search(self, query: str, limit: int = 10) -> List[SearchResult]:
+        """Perform text search on FalkorDB as a fallback."""
+        try:
+            # Simple keyword matching for fallback
+            # Extract main keywords longer than 3 chars
+            import re
+            words = re.findall(r'\b\w+\b', query.lower())
+            keywords = [w for w in words if len(w) > 3]
+            if not keywords and words:
+                keywords = words
+                
+            if not keywords:
+                return []
+                
+            where_clauses = " OR ".join([f"toLower(node.content) CONTAINS '{k}'" for k in keywords])
+            
+            cypher = f"""
+            MATCH (node:Vector_Chunk)
+            WHERE {where_clauses}
+            RETURN node.id AS chunk_id,
+                   node.content AS content,
+                   node.chunk_type AS chunk_type,
+                   node.source_id AS source_id,
+                   node.metadata AS metadata,
+                   0.8 AS score
+            LIMIT {limit}
+            """
+            raw_result = await self._falkordb.query(cypher)
+            return self._parse_graph_results(raw_result, is_vector=False)
+        except Exception as e:
+            logger.error("text_search_failed", error=str(e))
+            return []
+
     async def dfs_traversal(
         self,
         start_chunk_ids: List[str],
@@ -224,7 +257,6 @@ class IntelligentRetriever:
             
         return results
 
-    # Keep compatibility with existing retrieve signature
     async def retrieve(
         self,
         query: str,
@@ -233,9 +265,16 @@ class IntelligentRetriever:
         center_node_uuid: str | None = None,
     ) -> list[SearchResult]:
         vector = await self.vectorize_query(query)
-        if not vector:
-            return []
-        return await self.vector_search(vector, num_results)
+        results = []
+        if vector:
+            results = await self.vector_search(vector, num_results)
+            
+        # Fallback to text search if vector search returns 0 results (e.g. embeddings service was down)
+        if not results:
+            logger.info("Vector search returned 0 results, falling back to text search", query=query)
+            results = await self.text_search(query, num_results)
+            
+        return results
 
     async def retrieve_with_context(
         self,

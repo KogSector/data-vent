@@ -211,6 +211,13 @@ class ParallelSearchDispatcher:
             query_vectors=query_vector,
             limit=self.vector_top_k,
         )
+        
+        if not vector_results:
+            logger.info("vector_search returned 0 results, falling back to text search", chunk=chunk.text)
+            vector_results = await retriever.text_search(
+                query=chunk.text,
+                limit=self.vector_top_k,
+            )
 
         # DFS traversal from top vector matches
         if vector_results:
