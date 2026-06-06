@@ -3,3 +3,5 @@
 .env.secret
 __pycache__
 logs/
+.pytest_cache
+.venv
