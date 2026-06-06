@@ -37,8 +37,21 @@ class FalkorDBClient:
         self._password = password
         self._client: redis.Redis | None = None
 
+    from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
+    @retry(
+        stop=stop_after_attempt(10),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        retry=retry_if_exception_type((redis.ConnectionError, redis.TimeoutError, ConnectionError, OSError)),
+        before_sleep=lambda retry_state: logger.warning(
+            "FalkorDB connection attempt failed, retrying",
+            attempt=retry_state.attempt_number,
+            error=str(retry_state.outcome.exception())
+        )
+    )
     async def connect(self) -> None:
         """Establish a connection to FalkorDB."""
+        logger.info(f"Attempting to connect to FalkorDB at {self._host}:{self._port}...")
         self._client = redis.Redis(
             host=self._host,
             port=self._port,
