@@ -69,7 +69,7 @@ async def lifespan(app: FastAPI):
     global _retriever, _decomposer, _dispatcher, _aggregator
     
     logger.info("data_vent_starting",
-                port=settings.PORT,
+                port=settings.APP_PORT,
                 grpc_port=settings.GRPC_PORT,
                 environment=settings.ENVIRONMENT)
     
@@ -202,7 +202,7 @@ async def health_check():
         "version": "0.2.0",
         "pipeline": "active",
         "ports": {
-            "http": settings.PORT,
+            "http": settings.APP_PORT,
             "grpc": settings.GRPC_PORT,
         },
     }
@@ -339,7 +339,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host=settings.HOST,
-        port=settings.PORT,
+        port=settings.APP_PORT,
         reload=settings.ENVIRONMENT == "development",
     )
 

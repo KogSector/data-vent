@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # ── Service ────────────────────────────────────────────────────────────────
-    PORT: int = 3005
+    APP_PORT: int = 3005
     HOST: str = "0.0.0.0"
     GRPC_PORT: int = 50056
     GRPC_HOST: str = "0.0.0.0"
