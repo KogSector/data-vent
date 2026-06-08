@@ -3,13 +3,14 @@ Data Vent — Configuration Management
 """
 from typing import Optional
 from pydantic_settings import BaseSettings
+from pydantic import Field
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # ── Service ────────────────────────────────────────────────────────────────
-    APP_PORT: int = 3005
+    APP_PORT: int = Field(default=3005, alias="DATA_VENT_PORT")
     HOST: str = "0.0.0.0"
     GRPC_PORT: int = 50056
     GRPC_HOST: str = "0.0.0.0"
@@ -53,7 +54,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     class Config:
-        env_file = (".env.map", ".env.secret")
+        env_file = ("../.env", "../.env.secret")
         case_sensitive = True
 
 
