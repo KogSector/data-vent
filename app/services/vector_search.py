@@ -52,13 +52,17 @@ class FalkorDBClient:
     async def connect(self) -> None:
         """Establish a connection to FalkorDB."""
         logger.info(f"Attempting to connect to FalkorDB at {self._host}:{self._port}...")
-        self._client = redis.Redis(
-            host=self._host,
-            port=self._port,
-            username=self._username,
-            password=self._password,
-            decode_responses=True,
-        )
+        kwargs = {
+            "host": self._host,
+            "port": self._port,
+            "decode_responses": True,
+        }
+        if self._password:
+            kwargs["password"] = self._password
+            if self._username:
+                kwargs["username"] = self._username
+                
+        self._client = redis.Redis(**kwargs)
         # Ping to verify connectivity
         await self._client.ping()  # type: ignore
         logger.info(
