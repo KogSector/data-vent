@@ -10,48 +10,48 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # ── Service ────────────────────────────────────────────────────────────────
-    APP_PORT: int = Field(default=3005, alias="DATA_VENT_PORT")
-    HOST: str = "0.0.0.0"
-    GRPC_PORT: int = 50056
-    GRPC_HOST: str = "0.0.0.0"
-    ENVIRONMENT: str = "production"
+    APP_PORT: int = Field(alias="DATA_VENT_PORT")
+    HOST: str
+    GRPC_PORT: int
+    GRPC_HOST: str
+    ENVIRONMENT: str
 
     # ── FalkorDB ───────────────────────────────────────────────────────────────
-    FALKORDB_HOST: str = "r-6jissuruar.instance-tju0dagr0.hc-7up0crkyn.ap-south-1.aws.f2e0a955bb84.cloud"
-    FALKORDB_PORT: int = 64172
-    FALKORDB_USERNAME: str = "falkordb"
-    FALKORDB_PASSWORD: str = ""
-    FALKORDB_DATABASE: int = 0
-    FALKORDB_GRAPH_NAME: str = "knowledge-layer"
-    FALKORDB_VECTOR_DIMENSION: int = 384
-    FALKORDB_SIMILARITY_THRESHOLD: float = 0.75
-    FALKORDB_MAX_RESULTS: int = 100
+    FALKORDB_HOST: str
+    FALKORDB_PORT: int
+    FALKORDB_USERNAME: str
+    FALKORDB_PASSWORD: Optional[str] = None
+    FALKORDB_DATABASE: int
+    FALKORDB_GRAPH_NAME: str
+    FALKORDB_VECTOR_DIMENSION: int
+    FALKORDB_SIMILARITY_THRESHOLD: float
+    FALKORDB_MAX_RESULTS: int
 
 
     # ── Graphify (new backend — feature-flagged) ──────────────────────────────
     # Removed as Graphify is deprecated
 
     # ── Downstream Services ───────────────────────────────────────────────────
-    EMBEDDINGS_GRPC_ADDR: str = "embeddings-service:50054"
-    EMBEDDINGS_SERVICE_URL: str = "http://localhost:3001"
-    CLIENT_CONNECTOR_URL: str = "http://localhost:3004"
-    CLIENT_CONNECTOR_GRPC_ADDR: str = "client-connector:50055"
-    FEATURE_TOGGLE_SERVICE_URL: str = "http://localhost:3099"
+    EMBEDDINGS_GRPC_ADDR: str
+    EMBEDDINGS_SERVICE_URL: str
+    CLIENT_CONNECTOR_URL: str
+    CLIENT_CONNECTOR_GRPC_ADDR: str
+    FEATURE_TOGGLE_SERVICE_URL: str
 
     # ── Retrieval Pipeline ────────────────────────────────────────────────────
-    PIPELINE_MAX_QUERY_CHUNKS: int = 10
-    PIPELINE_PER_CHUNK_TIMEOUT: float = 10.0
-    PIPELINE_VECTOR_TOP_K: int = 5
-    PIPELINE_DFS_DEPTH: int = 2
-    PIPELINE_DFS_MIN_RELEVANCE: float = 0.3
-    PIPELINE_DFS_MAX_RESULTS: int = 20
-    PIPELINE_MAX_TOTAL_RESULTS: int = 50
-    PIPELINE_VECTOR_WEIGHT: float = 0.6
-    PIPELINE_GRAPH_WEIGHT: float = 0.3
-    PIPELINE_CROSS_CHUNK_WEIGHT: float = 0.1
+    PIPELINE_MAX_QUERY_CHUNKS: int
+    PIPELINE_PER_CHUNK_TIMEOUT: float
+    PIPELINE_VECTOR_TOP_K: int
+    PIPELINE_DFS_DEPTH: int
+    PIPELINE_DFS_MIN_RELEVANCE: float
+    PIPELINE_DFS_MAX_RESULTS: int
+    PIPELINE_MAX_TOTAL_RESULTS: int
+    PIPELINE_VECTOR_WEIGHT: float
+    PIPELINE_GRAPH_WEIGHT: float
+    PIPELINE_CROSS_CHUNK_WEIGHT: float
 
     # ── Logging ───────────────────────────────────────────────────────────────
-    LOG_LEVEL: str = "INFO"
+    LOG_LEVEL: str
 
     class Config:
         env_file = (".env.map", ".env.secret")
