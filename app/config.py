@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # ── FalkorDB ───────────────────────────────────────────────────────────────
     FALKORDB_HOST: str = "r-6jissuruar.instance-tju0dagr0.hc-7up0crkyn.ap-south-1.aws.f2e0a955bb84.cloud"
     FALKORDB_PORT: int = 64172
-    FALKORDB_USERNAME: str = "default"
+    FALKORDB_USERNAME: str = "falkordb"
     FALKORDB_PASSWORD: str = ""
     FALKORDB_DATABASE: int = 0
     FALKORDB_GRAPH_NAME: str = "knowledge-layer"
@@ -55,7 +55,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = (".env.map", ".env.secret")
-        case_sensitive = True
+        case_sensitive = False
         extra = "ignore"
 
 
