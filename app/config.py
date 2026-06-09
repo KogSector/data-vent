@@ -17,8 +17,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "production"
 
     # ── FalkorDB ───────────────────────────────────────────────────────────────
-    FALKORDB_HOST: str = "localhost"
-    FALKORDB_PORT: int = 6379
+    FALKORDB_HOST: str = "r-6jissuruar.instance-tju0dagr0.hc-7up0crkyn.ap-south-1.aws.f2e0a955bb84.cloud"
+    FALKORDB_PORT: int = 64172
     FALKORDB_USERNAME: str = "default"
     FALKORDB_PASSWORD: str = ""
     FALKORDB_DATABASE: int = 0
