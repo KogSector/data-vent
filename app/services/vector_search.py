@@ -62,9 +62,6 @@ class FalkorDBClient:
             if self._username:
                 kwargs["username"] = self._username
                 
-        if kwargs.get("host", "").endswith(".cloud"):
-            kwargs["ssl"] = True
-            kwargs["ssl_cert_reqs"] = "none"
         self._client = redis.Redis(**kwargs)
         # Ping to verify connectivity
         await self._client.ping()  # type: ignore
