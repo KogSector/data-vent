@@ -123,11 +123,6 @@ async def _start_grpc_background():
     except Exception as e:
         logger.error("grpc_server_failed", error=str(e))
 
-
-
-
-# â”€â”€â”€ FastAPI app â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 app = FastAPI(
     title="Data Vent — Intelligent Retrieval Engine",
     description="Semantic search and graph queries powered by FalkorDB",
@@ -144,12 +139,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# â”€â”€â”€ Request / Response models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 class RetrieveRequest(BaseModel):
     """Request for the unified retrieval pipeline."""
-    query: str
+    intent: str
+    keywords: List[str]
     limit: int = Field(default=20, ge=1, le=200)
     source_ids: Optional[List[str]] = None
     options: Optional[Dict[str, str]] = None
@@ -224,20 +217,36 @@ async def retrieve(request: RetrieveRequest, req: Request):
 
     request_id = req.headers.get("x-request-id", str(uuid.uuid4()))
     structlog.contextvars.bind_contextvars(request_id=request_id)
-    logger.info("retrieval_request_received", query=request.query, limit=request.limit, source_ids=request.source_ids)
+    logger.info("retrieval_request_received", intent=request.intent, keywords=request.keywords, limit=request.limit, source_ids=request.source_ids)
 
     start_time = time.perf_counter()
     
-    # 1. Decompose
-    decomp_result = await _decomposer.decompose(request.query)
-    logger.info("query_decomposed", chunks_count=len(decomp_result.chunks), decomposition_time_ms=decomp_result.decomposition_time_ms)
+    # 1. Decompose Intent
+    decomp_result = await _decomposer.decompose(request.intent)
+    
+    # Generate explicit chunks from keywords
+    keyword_chunks = [
+        QueryChunk(
+            text=kw,
+            intent="entity_lookup",
+            weight=1.0,
+            original_span=(0, 0),
+            tokens=kw.split()
+        )
+        for kw in request.keywords if kw.strip()
+    ]
+    
+    # Combine chunks
+    all_chunks = keyword_chunks + decomp_result.chunks
+    
+    logger.info("query_decomposed", chunks_count=len(all_chunks), decomposition_time_ms=decomp_result.decomposition_time_ms)
     
     # 2. Parallel Search
-    search_result = await _dispatcher.dispatch(decomp_result.chunks, _retriever)
+    search_result = await _dispatcher.dispatch(all_chunks, _retriever)
     logger.info("parallel_search_completed", search_time_ms=search_result.total_time_ms)
     
     # 3. Aggregate
-    agg_result = await _aggregator.aggregate(search_result, original_query=request.query, limit=request.limit)
+    agg_result = await _aggregator.aggregate(search_result, original_query=request.intent, limit=request.limit)
     logger.info("results_aggregated", aggregation_time_ms=agg_result.aggregation_time_ms)
     
     total_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
@@ -260,10 +269,10 @@ async def retrieve(request: RetrieveRequest, req: Request):
     
     query_chunks = [
         QueryChunkResponse(text=c.text, intent=c.intent, weight=c.weight)
-        for c in decomp_result.chunks
+        for c in all_chunks
     ]
     
-    logger.info("retrieval_pipeline_completed", query=request.query, total_results=len(results), total_time_ms=total_time_ms)
+    logger.info("retrieval_pipeline_completed", intent=request.intent, total_results=len(results), total_time_ms=total_time_ms)
     
     return RetrieveResponse(
         results=results,
@@ -342,4 +351,3 @@ if __name__ == "__main__":
         port=settings.APP_PORT,
         reload=settings.ENVIRONMENT == "development",
     )
-
