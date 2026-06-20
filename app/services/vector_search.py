@@ -98,6 +98,32 @@ class FalkorDBClient:
         )
         return {"raw": raw}
 
+    async def initialize_indexes(self) -> None:
+        """Initialize missing vector and full-text search indexes on the graph."""
+        try:
+            logger.info("Initializing vector and FTS indexes on FalkorDB...")
+            # Create Vector Index
+            vector_cypher = "CREATE VECTOR INDEX FOR (n:Vector_Chunk) ON (n.embeddings) OPTIONS {dimension: 768, similarityFunction: 'cosine'}"
+            try:
+                await self.query(vector_cypher)
+                logger.info("Vector index created successfully")
+            except Exception as e:
+                if "already exists" not in str(e).lower():
+                    logger.warning("Failed to create vector index (might already exist)", error=str(e))
+                
+            # Create FTS Index
+            fts_cypher = "CALL db.idx.fulltext.createNodeIndex('Vector_Chunk', 'content')"
+            try:
+                await self.query(fts_cypher)
+                logger.info("Full-Text Search index created successfully")
+            except Exception as e:
+                if "already exists" not in str(e).lower() and "already registered" not in str(e).lower():
+                    logger.warning("Failed to create FTS index (might already exist)", error=str(e))
+                    
+            logger.info("Index initialization complete")
+        except Exception as e:
+            logger.error("Error during index initialization", error=str(e))
+
 
 def build_client_from_settings(settings: Any) -> FalkorDBClient:
     """Factory: create a FalkorDBClient from app settings."""

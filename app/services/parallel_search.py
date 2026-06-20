@@ -198,22 +198,15 @@ class ParallelSearchDispatcher:
         vector_results: List[ChunkNode] = []
         graph_results: List[ChunkNode] = []
 
-        if not query_vector:
-            return ChunkSearchResult(
-                query_chunk=chunk,
-                vector_results=[],
-                graph_results=[],
-                error="empty_vector",
-            )
-
         # Vector similarity search
-        vector_results = await retriever.vector_search(
-            query_vectors=query_vector,
-            limit=self.vector_top_k,
-        )
+        if query_vector:
+            vector_results = await retriever.vector_search(
+                query_vectors=query_vector,
+                limit=self.vector_top_k,
+            )
         
         if not vector_results:
-            logger.info("vector_search returned 0 results, falling back to text search", chunk=chunk.text)
+            logger.info("vector_search returned 0 results (or empty vector), falling back to text search", chunk=chunk.text)
             vector_results = await retriever.text_search(
                 query=chunk.text,
                 limit=self.vector_top_k,

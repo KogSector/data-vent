@@ -76,6 +76,7 @@ async def lifespan(app: FastAPI):
     # Initialise FalkorDB
     falkordb_client = build_client_from_settings(settings)
     await falkordb_client.connect()
+    await falkordb_client.initialize_indexes()
 
     # Wrap in IntelligentRetriever
     _retriever = IntelligentRetriever(falkordb_client=falkordb_client, settings=settings)
@@ -159,7 +160,7 @@ class ScoredChunkResponse(BaseModel):
     chunk_type: str = ""
     source_id: str = ""
     document_id: str = ""
-    metadata: Dict[str, str] = {}
+    metadata: Dict[str, Any] = {}
     matched_by_chunks: List[str] = []
 
 

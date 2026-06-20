@@ -87,7 +87,7 @@ class IntelligentRetriever:
         try:
             embedding_str = json.dumps(query_vectors)
             cypher = f"""
-            CALL db.idx.vector.queryNodes('Vector_Chunk', 'embedding', {limit}, vecf32({embedding_str})) YIELD node, score
+            CALL db.idx.vector.queryNodes('Vector_Chunk', 'embeddings', {limit}, vecf32({embedding_str})) YIELD node, score
             RETURN node.id AS chunk_id,
                    node.content AS content,
                    node.chunk_type AS chunk_type,
@@ -103,34 +103,32 @@ class IntelligentRetriever:
             return []
 
     async def text_search(self, query: str, limit: int = 10) -> List[SearchResult]:
-        """Perform text search on FalkorDB as a fallback."""
+        """Perform Full-Text Search on FalkorDB as a fallback."""
         try:
-            # Simple keyword matching for fallback
-            # Extract main keywords longer than 3 chars
             import re
             words = re.findall(r'\b\w+\b', query.lower())
-            keywords = [w for w in words if len(w) > 3]
+            keywords = [w for w in words if len(w) > 2]
             if not keywords and words:
                 keywords = words
                 
             if not keywords:
                 return []
                 
-            where_clauses = " OR ".join([f"toLower(node.content) CONTAINS '{k}'" for k in keywords])
+            fts_query = " ".join(keywords)
             
             cypher = f"""
-            MATCH (node:Vector_Chunk)
-            WHERE {where_clauses}
+            CALL db.idx.fulltext.queryNodes('Vector_Chunk', '{fts_query}') YIELD node, score
             RETURN node.id AS chunk_id,
                    node.content AS content,
                    node.chunk_type AS chunk_type,
                    node.source_id AS source_id,
                    node.metadata AS metadata,
-                   0.8 AS score
+                   score AS score
+            ORDER BY score DESC
             LIMIT {limit}
             """
             raw_result = await self._falkordb.query(cypher)
-            return self._parse_graph_results(raw_result, is_vector=False)
+            return self._parse_graph_results(raw_result, is_vector=True)
         except Exception as e:
             logger.error("text_search_failed", error=str(e))
             return []
