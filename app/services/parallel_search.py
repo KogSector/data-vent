@@ -238,8 +238,8 @@ class ParallelSearchDispatcher:
         """
         try:
             response = await retriever._http_client.post(
-                f"{retriever.embeddings_service_url}/api/v1/generate-batch",
-                json={"texts": texts},
+                f"{retriever.ollama_url}/api/embed",
+                json={"input": texts, "model": "nomic-embed-text"},
                 timeout=15.0,
             )
             response.raise_for_status()

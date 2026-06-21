@@ -54,7 +54,7 @@ class IntelligentRetriever:
 
     def __init__(self, falkordb_client: FalkorDBClient, settings: Any) -> None:
         self._falkordb = falkordb_client
-        self.embeddings_service_url = getattr(settings, "EMBEDDINGS_SERVICE_URL", "http://localhost:3001")
+        self.ollama_url = getattr(settings, "OLLAMA_URL", "http://localhost:11434")
         self._http_client = httpx.AsyncClient(timeout=15.0)
 
     @property
@@ -66,15 +66,16 @@ class IntelligentRetriever:
         await self._http_client.aclose()
 
     async def vectorize_query(self, query: str) -> List[float]:
-        """Generate embeddings for a single query string."""
+        """Generate embeddings for a single query string using Ollama directly."""
         try:
             response = await self._http_client.post(
-                f"{self.embeddings_service_url}/api/v1/generate",
-                json={"text": query, "model": "nomic-embed-text:latest"}
+                f"{self.ollama_url}/api/embed",
+                json={"input": [query], "model": "nomic-embed-text"}
             )
             response.raise_for_status()
             data = response.json()
-            return data.get("embedding", [])
+            embeddings = data.get("embeddings", [])
+            return embeddings[0] if embeddings else []
         except Exception as e:
             logger.error("vectorize_query_failed", query=query[:80], error=str(e))
             return []
