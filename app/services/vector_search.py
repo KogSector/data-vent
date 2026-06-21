@@ -108,7 +108,7 @@ class FalkorDBClient:
                 await self.query(vector_cypher)
                 logger.info("Vector index created successfully")
             except Exception as e:
-                if "already exists" not in str(e).lower():
+                if "already exists" not in str(e).lower() and "already indexed" not in str(e).lower():
                     logger.warning("Failed to create vector index (might already exist)", error=str(e))
                 
             # Create FTS Index
@@ -117,7 +117,7 @@ class FalkorDBClient:
                 await self.query(fts_cypher)
                 logger.info("Full-Text Search index created successfully")
             except Exception as e:
-                if "already exists" not in str(e).lower() and "already registered" not in str(e).lower():
+                if "already exists" not in str(e).lower() and "already registered" not in str(e).lower() and "already indexed" not in str(e).lower():
                     logger.warning("Failed to create FTS index (might already exist)", error=str(e))
                     
             logger.info("Index initialization complete")
