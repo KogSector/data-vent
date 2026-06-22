@@ -67,7 +67,7 @@ cargo run --bin data-vent
 - **Streaming**: Kafka
 - **Database**: FalkorDB (Redis protocol)
 - **Graph Engine**: Graphify with temporal features
-- **LLM**: Ollama (Llama3.2)
+- **LLM**: Ollama (Llama3.1:8b)
 - **Serialization**: JSON
 
 ## Integration
