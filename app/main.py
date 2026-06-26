@@ -186,6 +186,17 @@ class RetrieveResponse(BaseModel):
     total_time_ms: float
 
 
+class RetrieveBatchRequest(BaseModel):
+    """Batch request for the unified retrieval pipeline."""
+    requests: List[RetrieveRequest]
+
+
+class RetrieveBatchResponse(BaseModel):
+    """Response containing results from multiple queries executed in parallel."""
+    responses: List[RetrieveResponse]
+    total_batch_time_ms: float
+
+
 # â”€â”€â”€ Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @app.get("/health")
@@ -289,6 +300,24 @@ async def retrieve(request: RetrieveRequest, req: Request):
         total_time_ms=total_time_ms,
     )
 
+
+@app.post("/api/v1/retrieve/batch", response_model=RetrieveBatchResponse)
+async def retrieve_batch(request: RetrieveBatchRequest, req: Request):
+    """
+    Execute multiple retrieval requests concurrently.
+    """
+    start_time = time.perf_counter()
+    
+    tasks = [retrieve(req_item, req) for req_item in request.requests]
+    responses = await asyncio.gather(*tasks)
+    
+    total_batch_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
+    logger.info("batch_retrieval_completed", total_requests=len(request.requests), total_batch_time_ms=total_batch_time_ms)
+    
+    return RetrieveBatchResponse(
+        responses=responses,
+        total_batch_time_ms=total_batch_time_ms
+    )
 
 @app.post("/api/v1/search")
 async def search(request: dict):
