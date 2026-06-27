@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     EMBEDDINGS_SERVICE_URL: str
     CLIENT_CONNECTOR_URL: str
     CLIENT_CONNECTOR_GRPC_ADDR: str
-    FEATURE_TOGGLE_SERVICE_URL: str
+
 
     # ── Retrieval Pipeline ────────────────────────────────────────────────────
     PIPELINE_MAX_QUERY_CHUNKS: int
