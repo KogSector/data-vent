@@ -34,24 +34,25 @@ class Settings(BaseSettings):
     # ── Downstream Services ───────────────────────────────────────────────────
     EMBEDDINGS_GRPC_ADDR: str
     EMBEDDINGS_SERVICE_URL: str
+    OLLAMA_URL: Optional[str] = "http://localhost:11434"
     CLIENT_CONNECTOR_URL: str
     CLIENT_CONNECTOR_GRPC_ADDR: str
 
 
     # ── Retrieval Pipeline ────────────────────────────────────────────────────
-    PIPELINE_MAX_QUERY_CHUNKS: int
-    PIPELINE_PER_CHUNK_TIMEOUT: float
-    PIPELINE_VECTOR_TOP_K: int
-    PIPELINE_DFS_DEPTH: int
-    PIPELINE_DFS_MIN_RELEVANCE: float
-    PIPELINE_DFS_MAX_RESULTS: int
-    PIPELINE_MAX_TOTAL_RESULTS: int
-    PIPELINE_VECTOR_WEIGHT: float
-    PIPELINE_GRAPH_WEIGHT: float
-    PIPELINE_CROSS_CHUNK_WEIGHT: float
+    PIPELINE_MAX_QUERY_CHUNKS: int = Field(default=5)
+    PIPELINE_PER_CHUNK_TIMEOUT: float = Field(default=5.0)
+    PIPELINE_VECTOR_TOP_K: int = Field(default=10)
+    PIPELINE_DFS_DEPTH: int = Field(default=2)
+    PIPELINE_DFS_MIN_RELEVANCE: float = Field(default=0.5)
+    PIPELINE_DFS_MAX_RESULTS: int = Field(default=20)
+    PIPELINE_MAX_TOTAL_RESULTS: int = Field(default=50)
+    PIPELINE_VECTOR_WEIGHT: float = Field(default=0.7)
+    PIPELINE_GRAPH_WEIGHT: float = Field(default=0.3)
+    PIPELINE_CROSS_CHUNK_WEIGHT: float = Field(default=0.1)
 
     # ── Logging ───────────────────────────────────────────────────────────────
-    LOG_LEVEL: str
+    LOG_LEVEL: str = Field(default="INFO")
 
     class Config:
         env_file = (".env.map", ".env.secret")
