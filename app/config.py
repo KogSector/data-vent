@@ -10,11 +10,11 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # ── Service ────────────────────────────────────────────────────────────────
-    APP_PORT: int = Field(alias="DATA_VENT_PORT")
-    HOST: str
-    GRPC_PORT: int
-    GRPC_HOST: str
-    ENVIRONMENT: str
+    APP_PORT: int = Field(alias="DATA_VENT_PORT", default=3002)
+    HOST: str = Field(default="0.0.0.0")
+    GRPC_PORT: int = Field(default=50051)
+    GRPC_HOST: str = Field(default="0.0.0.0")
+    ENVIRONMENT: str = Field(default="production")
 
     # ── FalkorDB ───────────────────────────────────────────────────────────────
     FALKORDB_HOST: str
