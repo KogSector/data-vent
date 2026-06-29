@@ -241,14 +241,26 @@ class ParallelSearchDispatcher:
         Falls back to individual calls if batch endpoint is unavailable.
         """
         try:
+            if not retriever.gemini_api_key:
+                logger.warning("GEMINI_API_KEY not set")
+                return []
+                
+            requests = [
+                {
+                    "model": "models/embedding-001",
+                    "content": {"parts": [{"text": t}]}
+                } for t in texts
+            ]
+            
             response = await retriever._http_client.post(
-                f"{retriever.ollama_url}/api/embed",
-                json={"input": texts, "model": "nomic-embed-text"},
+                f"https://generativelanguage.googleapis.com/v1beta/models/embedding-001:batchEmbedContents?key={retriever.gemini_api_key}",
+                json={"requests": requests},
                 timeout=15.0,
             )
             response.raise_for_status()
             data = response.json()
-            return data.get("embeddings", [])
+            embeddings = data.get("embeddings", [])
+            return [e.get("values", []) for e in embeddings]
         except Exception as e:
             logger.warning(
                 "batch_vectorize_failed_fallback_individual",

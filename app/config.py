@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     # ── Downstream Services ───────────────────────────────────────────────────
     EMBEDDINGS_GRPC_ADDR: str
     EMBEDDINGS_SERVICE_URL: str
-    OLLAMA_URL: Optional[str] = "http://localhost:11434"
+    GEMINI_API_KEY: str = Field(default="")
     CLIENT_CONNECTOR_URL: str
     CLIENT_CONNECTOR_GRPC_ADDR: str
 

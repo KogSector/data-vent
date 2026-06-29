@@ -58,7 +58,7 @@ class IntelligentRetriever:
 
     def __init__(self, falkordb_client: FalkorDBClient, settings: Any) -> None:
         self._falkordb = falkordb_client
-        self.ollama_url = getattr(settings, "OLLAMA_URL", "http://localhost:11434")
+        self.gemini_api_key = getattr(settings, "GEMINI_API_KEY", "")
         self._http_client = httpx.AsyncClient(timeout=15.0)
 
     @property
@@ -70,16 +70,26 @@ class IntelligentRetriever:
         await self._http_client.aclose()
 
     async def vectorize_query(self, query: str) -> List[float]:
-        """Generate embeddings for a single query string using Ollama directly."""
+        """Generate embeddings for a single query string using Gemini API directly."""
         try:
+            if not self.gemini_api_key:
+                logger.warning("GEMINI_API_KEY not set")
+                return []
+                
             response = await self._http_client.post(
-                f"{self.ollama_url}/api/embed",
-                json={"input": [query], "model": "nomic-embed-text"},
+                f"https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key={self.gemini_api_key}",
+                json={
+                    "model": "models/embedding-001",
+                    "content": {
+                        "parts": [{"text": query}]
+                    }
+                },
+                timeout=15.0,
             )
             response.raise_for_status()
             data = response.json()
-            embeddings = data.get("embeddings", [])
-            return embeddings[0] if embeddings else []
+            embedding = data.get("embedding", {}).get("values", [])
+            return embedding
         except Exception as e:
             logger.error("vectorize_query_failed", query=query[:80], error=str(e))
             return []
