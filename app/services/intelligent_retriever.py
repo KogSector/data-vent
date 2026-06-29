@@ -11,15 +11,17 @@ from typing import Any, List
 
 import httpx
 import structlog
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from app.services.vector_search import FalkorDBClient
 
 logger = structlog.get_logger(__name__)
 
+
 @dataclass
 class SearchResult:
     """Normalised retrieval result."""
+
     chunk_id: str
     content: str
     score: float
@@ -43,9 +45,11 @@ class SearchResult:
             "depth": self.depth,
         }
 
+
 @dataclass
 class DFSTraversalResult:
     chunks: List[SearchResult]
+
 
 class IntelligentRetriever:
     """
@@ -70,7 +74,7 @@ class IntelligentRetriever:
         try:
             response = await self._http_client.post(
                 f"{self.ollama_url}/api/embed",
-                json={"input": [query], "model": "nomic-embed-text"}
+                json={"input": [query], "model": "nomic-embed-text"},
             )
             response.raise_for_status()
             data = response.json()
@@ -80,11 +84,13 @@ class IntelligentRetriever:
             logger.error("vectorize_query_failed", query=query[:80], error=str(e))
             return []
 
-    async def vector_search(self, query_vectors: List[float], limit: int = 10) -> List[SearchResult]:
+    async def vector_search(
+        self, query_vectors: List[float], limit: int = 10
+    ) -> List[SearchResult]:
         """Perform vector similarity search on FalkorDB."""
         if not query_vectors:
             return []
-            
+
         try:
             embedding_str = json.dumps(query_vectors)
             cypher = f"""
@@ -107,16 +113,17 @@ class IntelligentRetriever:
         """Perform Full-Text Search on FalkorDB as a fallback."""
         try:
             import re
-            words = re.findall(r'\b\w+\b', query.lower())
+
+            words = re.findall(r"\b\w+\b", query.lower())
             keywords = [w for w in words if len(w) > 2]
             if not keywords and words:
                 keywords = words
-                
+
             if not keywords:
                 return []
-                
+
             fts_query = " ".join(keywords)
-            
+
             cypher = f"""
             CALL db.idx.fulltext.queryNodes('Vector_Chunk', '{fts_query}') YIELD node, score
             RETURN node.id AS chunk_id,
@@ -144,11 +151,11 @@ class IntelligentRetriever:
         """Perform variable-length path traversal from start nodes in FalkorDB."""
         if not start_chunk_ids:
             return DFSTraversalResult(chunks=[])
-            
+
         try:
             # We construct a Cypher query using an IN clause for the start nodes
             ids_str = ", ".join(f"'{cid}'" for cid in start_chunk_ids)
-            
+
             # Using variable length path. We cap the depth.
             cypher = f"""
             MATCH path = (start:Vector_Chunk)-[*1..{max_depth}]-(n:Vector_Chunk)
@@ -163,37 +170,39 @@ class IntelligentRetriever:
             """
             raw_result = await self._falkordb.query(cypher)
             chunks = self._parse_graph_results(raw_result, is_vector=False)
-            
+
             # Base graph score decreases with depth.
             for chunk in chunks:
                 chunk.score = max(0.1, 1.0 - (chunk.depth * 0.2))
-                
+
             # Filter by relevance
             chunks = [c for c in chunks if c.score >= min_relevance]
-            
+
             return DFSTraversalResult(chunks=chunks)
-            
+
         except Exception as e:
             logger.error("dfs_traversal_failed", error=str(e))
             return DFSTraversalResult(chunks=[])
 
-    def _parse_graph_results(self, raw_result: Any, is_vector: bool) -> List[SearchResult]:
+    def _parse_graph_results(
+        self, raw_result: Any, is_vector: bool
+    ) -> List[SearchResult]:
         """Parse raw GRAPH.QUERY output into SearchResult objects."""
         # FalkorDB typically returns [[headers], [[row1], [row2]], [stats]]
         if not raw_result or len(raw_result) < 2:
             return []
-            
+
         headers_raw = raw_result[0]
         rows_raw = raw_result[1]
-        
+
         # Decode headers
         headers = []
         for h in headers_raw:
             if isinstance(h, bytes):
-                headers.append(h.decode('utf-8'))
+                headers.append(h.decode("utf-8"))
             else:
                 headers.append(str(h))
-                
+
         results = []
         for row in rows_raw:
             chunk_id = ""
@@ -203,18 +212,18 @@ class IntelligentRetriever:
             metadata_str = "{}"
             score = 0.0
             depth = 0
-            
+
             for i, val in enumerate(row):
                 if i >= len(headers):
                     continue
-                    
+
                 col_name = headers[i]
-                
+
                 # Extract value
                 v = val
                 if isinstance(val, bytes):
-                    v = val.decode('utf-8')
-                    
+                    v = val.decode("utf-8")
+
                 if col_name == "chunk_id":
                     chunk_id = str(v)
                 elif col_name == "content":
@@ -235,25 +244,27 @@ class IntelligentRetriever:
                         depth = int(v)
                     except (ValueError, TypeError):
                         pass
-                        
+
             metadata = {}
             try:
                 if metadata_str and metadata_str != "None":
                     metadata = json.loads(metadata_str)
             except json.JSONDecodeError:
                 pass
-                
-            results.append(SearchResult(
-                chunk_id=chunk_id,
-                content=content,
-                score=score,
-                metadata=metadata,
-                chunk_type=chunk_type,
-                source_id=source_id,
-                document_id=source_id,
-                depth=depth,
-            ))
-            
+
+            results.append(
+                SearchResult(
+                    chunk_id=chunk_id,
+                    content=content,
+                    score=score,
+                    metadata=metadata,
+                    chunk_type=chunk_type,
+                    source_id=source_id,
+                    document_id=source_id,
+                    depth=depth,
+                )
+            )
+
         return results
 
     async def retrieve(
@@ -267,12 +278,15 @@ class IntelligentRetriever:
         results = []
         if vector:
             results = await self.vector_search(vector, num_results)
-            
+
         # Fallback to text search if vector search returns 0 results (e.g. embeddings service was down)
         if not results:
-            logger.info("Vector search returned 0 results, falling back to text search", query=query)
+            logger.info(
+                "Vector search returned 0 results, falling back to text search",
+                query=query,
+            )
             results = await self.text_search(query, num_results)
-            
+
         return results
 
     async def retrieve_with_context(
@@ -282,4 +296,6 @@ class IntelligentRetriever:
         group_ids: list[str] | None = None,
         num_results: int = 15,
     ) -> list[SearchResult]:
-        return await self.retrieve(query, group_ids, num_results, center_node_uuid=entity_uuid)
+        return await self.retrieve(
+            query, group_ids, num_results, center_node_uuid=entity_uuid
+        )

@@ -7,10 +7,9 @@ Handles deduplication, score fusion, cross-chunk boosting, and completion checki
 
 import structlog
 from dataclasses import dataclass, field
-from typing import List, Dict, Set, Optional, Any
-from collections import defaultdict
+from typing import List, Dict, Set
 from app.services.intelligent_retriever import SearchResult as ChunkNode
-from app.services.parallel_search import ChunkSearchResult, ParallelSearchResult
+from app.services.parallel_search import ParallelSearchResult
 
 logger = structlog.get_logger()
 
@@ -92,6 +91,7 @@ class ResultAggregator:
         Aggregate all parallel search results into a single ranked list.
         """
         import time
+
         start = time.perf_counter()
 
         limit = limit or self.max_results
@@ -108,17 +108,13 @@ class ResultAggregator:
 
             # Vector results
             for node in chunk_result.vector_results:
-                acc = chunk_map.setdefault(
-                    node.chunk_id, _ChunkAccumulator(node=node)
-                )
+                acc = chunk_map.setdefault(node.chunk_id, _ChunkAccumulator(node=node))
                 acc.vector_scores.append(node.score * chunk_weight)
                 acc.matched_by.add(chunk_text)
 
             # Graph results
             for node in chunk_result.graph_results:
-                acc = chunk_map.setdefault(
-                    node.chunk_id, _ChunkAccumulator(node=node)
-                )
+                acc = chunk_map.setdefault(node.chunk_id, _ChunkAccumulator(node=node))
                 acc.graph_scores.append(node.score * chunk_weight)
                 acc.matched_by.add(chunk_text)
 
@@ -152,20 +148,22 @@ class ResultAggregator:
                 + cross_boost * self.cross_chunk_weight
             )
 
-            scored.append(ScoredChunk(
-                chunk_id=chunk_id,
-                content=acc.node.content,
-                final_score=round(final_score, 4),
-                vector_score=round(best_vector, 4),
-                graph_score=round(best_graph, 4),
-                cross_chunk_boost=round(cross_boost, 4),
-                chunk_type=acc.node.chunk_type,
-                source_id=acc.node.source_id,
-                document_id=acc.node.document_id,
-                metadata=acc.node.metadata,
-                matched_by_chunks=list(acc.matched_by),
-                depth=acc.node.depth,
-            ))
+            scored.append(
+                ScoredChunk(
+                    chunk_id=chunk_id,
+                    content=acc.node.content,
+                    final_score=round(final_score, 4),
+                    vector_score=round(best_vector, 4),
+                    graph_score=round(best_graph, 4),
+                    cross_chunk_boost=round(cross_boost, 4),
+                    chunk_type=acc.node.chunk_type,
+                    source_id=acc.node.source_id,
+                    document_id=acc.node.document_id,
+                    metadata=acc.node.metadata,
+                    matched_by_chunks=list(acc.matched_by),
+                    depth=acc.node.depth,
+                )
+            )
 
         # Step 3: Rank by final score
         scored.sort(key=lambda c: c.final_score, reverse=True)

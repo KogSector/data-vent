@@ -4,75 +4,72 @@
 # source: retrieval.proto
 # Protobuf Python Version: 6.31.1
 """Generated protocol buffer code."""
+
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 _runtime_version.ValidateProtobufRuntimeVersion(
-    _runtime_version.Domain.PUBLIC,
-    6,
-    31,
-    1,
-    '',
-    'retrieval.proto'
+    _runtime_version.Domain.PUBLIC, 6, 31, 1, "", "retrieval.proto"
 )
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
 
-
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fretrieval.proto\x12\x14\x63onfuse.retrieval.v1\"\xb8\x01\n\x0fRetrieveRequest\x12\r\n\x05query\x18\x01 \x01(\t\x12\r\n\x05limit\x18\x02 \x01(\x05\x12\x12\n\nsource_ids\x18\x03 \x03(\t\x12\x43\n\x07options\x18\x04 \x03(\x0b\x32\x32.confuse.retrieval.v1.RetrieveRequest.OptionsEntry\x1a.\n\x0cOptionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xe8\x02\n\x10RetrieveResponse\x12\x33\n\x07results\x18\x01 \x03(\x0b\x32\".confuse.retrieval.v1.ScoredResult\x12\x15\n\rtotal_results\x18\x02 \x01(\x05\x12\x16\n\x0eunique_sources\x18\x03 \x01(\x05\x12\x16\n\x0evector_matches\x18\x04 \x01(\x05\x12\x15\n\rgraph_matches\x18\x05 \x01(\x05\x12\x1a\n\x12\x63ompletion_reached\x18\x06 \x01(\x08\x12:\n\x0cquery_chunks\x18\x07 \x03(\x0b\x32$.confuse.retrieval.v1.QueryChunkInfo\x12\x1d\n\x15\x64\x65\x63omposition_time_ms\x18\x08 \x01(\x02\x12\x16\n\x0esearch_time_ms\x18\t \x01(\x02\x12\x1b\n\x13\x61ggregation_time_ms\x18\n \x01(\x02\x12\x15\n\rtotal_time_ms\x18\x0b \x01(\x02\"\xd8\x02\n\x0cScoredResult\x12\x10\n\x08\x63hunk_id\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12\x13\n\x0b\x66inal_score\x18\x03 \x01(\x02\x12\x14\n\x0cvector_score\x18\x04 \x01(\x02\x12\x13\n\x0bgraph_score\x18\x05 \x01(\x02\x12\x19\n\x11\x63ross_chunk_boost\x18\x06 \x01(\x02\x12\x12\n\nchunk_type\x18\x07 \x01(\t\x12\x11\n\tsource_id\x18\x08 \x01(\t\x12\x13\n\x0b\x64ocument_id\x18\t \x01(\t\x12\x42\n\x08metadata\x18\n \x03(\x0b\x32\x30.confuse.retrieval.v1.ScoredResult.MetadataEntry\x12\x19\n\x11matched_by_chunks\x18\x0b \x03(\t\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\">\n\x0eQueryChunkInfo\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x0e\n\x06intent\x18\x02 \x01(\t\x12\x0e\n\x06weight\x18\x03 \x01(\x02\"\xec\x01\n\x16RetrievalSearchRequest\x12\x15\n\rquery_vectors\x18\x01 \x03(\x02\x12\r\n\x05limit\x18\x02 \x01(\x05\x12\x1c\n\x14similarity_threshold\x18\x03 \x01(\x02\x12\x12\n\nsource_ids\x18\x04 \x03(\t\x12J\n\x07options\x18\x05 \x03(\x0b\x32\x39.confuse.retrieval.v1.RetrievalSearchRequest.OptionsEntry\x1a.\n\x0cOptionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xf5\x01\n\x0eRetrievedChunk\x12\x10\n\x08\x63hunk_id\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12\r\n\x05score\x18\x03 \x01(\x02\x12\x12\n\nchunk_type\x18\x04 \x01(\t\x12\x11\n\tsource_id\x18\x05 \x01(\t\x12\x13\n\x0b\x64ocument_id\x18\x06 \x01(\t\x12\x44\n\x08metadata\x18\x07 \x03(\x0b\x32\x32.confuse.retrieval.v1.RetrievedChunk.MetadataEntry\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"v\n\x17RetrievalSearchResponse\x12\x34\n\x06\x63hunks\x18\x01 \x03(\x0b\x32$.confuse.retrieval.v1.RetrievedChunk\x12\r\n\x05total\x18\x02 \x01(\x05\x12\x16\n\x0esearch_time_ms\x18\x03 \x01(\x02\"\x84\x01\n\x13RetrievalDFSRequest\x12\x17\n\x0fstart_chunk_ids\x18\x01 \x03(\t\x12\x15\n\rquery_vectors\x18\x02 \x03(\x02\x12\x11\n\tmax_depth\x18\x03 \x01(\x05\x12\x15\n\rmin_relevance\x18\x04 \x01(\x02\x12\x13\n\x0bmax_results\x18\x05 \x01(\x05\"\x9a\x01\n\x14RetrievalDFSResponse\x12\x34\n\x06\x63hunks\x18\x01 \x03(\x0b\x32$.confuse.retrieval.v1.RetrievedChunk\x12\x15\n\rnodes_visited\x18\x02 \x01(\x05\x12\x1a\n\x12\x63ompletion_reached\x18\x03 \x01(\x08\x12\x19\n\x11traversal_time_ms\x18\x04 \x01(\x02\"\xaf\x01\n\x13HybridSearchRequest\x12\x12\n\nquery_text\x18\x01 \x01(\t\x12\x15\n\rquery_vectors\x18\x02 \x03(\x02\x12\r\n\x05limit\x18\x03 \x01(\x05\x12\x1c\n\x14similarity_threshold\x18\x04 \x01(\x02\x12\x11\n\tdfs_depth\x18\x05 \x01(\x05\x12\x19\n\x11\x64\x66s_min_relevance\x18\x06 \x01(\x02\x12\x12\n\nsource_ids\x18\x07 \x03(\t\"\xae\x01\n\x14HybridSearchResponse\x12\x34\n\x06\x63hunks\x18\x01 \x03(\x0b\x32$.confuse.retrieval.v1.RetrievedChunk\x12\x16\n\x0evector_matches\x18\x02 \x01(\x05\x12\x15\n\rgraph_matches\x18\x03 \x01(\x05\x12\x1a\n\x12\x63ompletion_reached\x18\x04 \x01(\x08\x12\x15\n\rtotal_time_ms\x18\x05 \x01(\x02\"\x18\n\x16RetrievalHealthRequest\"|\n\x17RetrievalHealthResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x1a\n\x12\x66\x61lkordb_connected\x18\x03 \x01(\x08\x12$\n\x1c\x65mbeddings_service_connected\x18\x04 \x01(\x08\x32\x8d\x04\n\x10RetrievalService\x12Y\n\x08Retrieve\x12%.confuse.retrieval.v1.RetrieveRequest\x1a&.confuse.retrieval.v1.RetrieveResponse\x12\x65\n\x06Search\x12,.confuse.retrieval.v1.RetrievalSearchRequest\x1a-.confuse.retrieval.v1.RetrievalSearchResponse\x12\x64\n\x0b\x44\x46STraverse\x12).confuse.retrieval.v1.RetrievalDFSRequest\x1a*.confuse.retrieval.v1.RetrievalDFSResponse\x12\x65\n\x0cHybridSearch\x12).confuse.retrieval.v1.HybridSearchRequest\x1a*.confuse.retrieval.v1.HybridSearchResponse\x12j\n\x0bHealthCheck\x12,.confuse.retrieval.v1.RetrievalHealthRequest\x1a-.confuse.retrieval.v1.RetrievalHealthResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b'\n\x0fretrieval.proto\x12\x14\x63onfuse.retrieval.v1"\xb8\x01\n\x0fRetrieveRequest\x12\r\n\x05query\x18\x01 \x01(\t\x12\r\n\x05limit\x18\x02 \x01(\x05\x12\x12\n\nsource_ids\x18\x03 \x03(\t\x12\x43\n\x07options\x18\x04 \x03(\x0b\x32\x32.confuse.retrieval.v1.RetrieveRequest.OptionsEntry\x1a.\n\x0cOptionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01"\xe8\x02\n\x10RetrieveResponse\x12\x33\n\x07results\x18\x01 \x03(\x0b\x32".confuse.retrieval.v1.ScoredResult\x12\x15\n\rtotal_results\x18\x02 \x01(\x05\x12\x16\n\x0eunique_sources\x18\x03 \x01(\x05\x12\x16\n\x0evector_matches\x18\x04 \x01(\x05\x12\x15\n\rgraph_matches\x18\x05 \x01(\x05\x12\x1a\n\x12\x63ompletion_reached\x18\x06 \x01(\x08\x12:\n\x0cquery_chunks\x18\x07 \x03(\x0b\x32$.confuse.retrieval.v1.QueryChunkInfo\x12\x1d\n\x15\x64\x65\x63omposition_time_ms\x18\x08 \x01(\x02\x12\x16\n\x0esearch_time_ms\x18\t \x01(\x02\x12\x1b\n\x13\x61ggregation_time_ms\x18\n \x01(\x02\x12\x15\n\rtotal_time_ms\x18\x0b \x01(\x02"\xd8\x02\n\x0cScoredResult\x12\x10\n\x08\x63hunk_id\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12\x13\n\x0b\x66inal_score\x18\x03 \x01(\x02\x12\x14\n\x0cvector_score\x18\x04 \x01(\x02\x12\x13\n\x0bgraph_score\x18\x05 \x01(\x02\x12\x19\n\x11\x63ross_chunk_boost\x18\x06 \x01(\x02\x12\x12\n\nchunk_type\x18\x07 \x01(\t\x12\x11\n\tsource_id\x18\x08 \x01(\t\x12\x13\n\x0b\x64ocument_id\x18\t \x01(\t\x12\x42\n\x08metadata\x18\n \x03(\x0b\x32\x30.confuse.retrieval.v1.ScoredResult.MetadataEntry\x12\x19\n\x11matched_by_chunks\x18\x0b \x03(\t\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01">\n\x0eQueryChunkInfo\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x0e\n\x06intent\x18\x02 \x01(\t\x12\x0e\n\x06weight\x18\x03 \x01(\x02"\xec\x01\n\x16RetrievalSearchRequest\x12\x15\n\rquery_vectors\x18\x01 \x03(\x02\x12\r\n\x05limit\x18\x02 \x01(\x05\x12\x1c\n\x14similarity_threshold\x18\x03 \x01(\x02\x12\x12\n\nsource_ids\x18\x04 \x03(\t\x12J\n\x07options\x18\x05 \x03(\x0b\x32\x39.confuse.retrieval.v1.RetrievalSearchRequest.OptionsEntry\x1a.\n\x0cOptionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01"\xf5\x01\n\x0eRetrievedChunk\x12\x10\n\x08\x63hunk_id\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12\r\n\x05score\x18\x03 \x01(\x02\x12\x12\n\nchunk_type\x18\x04 \x01(\t\x12\x11\n\tsource_id\x18\x05 \x01(\t\x12\x13\n\x0b\x64ocument_id\x18\x06 \x01(\t\x12\x44\n\x08metadata\x18\x07 \x03(\x0b\x32\x32.confuse.retrieval.v1.RetrievedChunk.MetadataEntry\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01"v\n\x17RetrievalSearchResponse\x12\x34\n\x06\x63hunks\x18\x01 \x03(\x0b\x32$.confuse.retrieval.v1.RetrievedChunk\x12\r\n\x05total\x18\x02 \x01(\x05\x12\x16\n\x0esearch_time_ms\x18\x03 \x01(\x02"\x84\x01\n\x13RetrievalDFSRequest\x12\x17\n\x0fstart_chunk_ids\x18\x01 \x03(\t\x12\x15\n\rquery_vectors\x18\x02 \x03(\x02\x12\x11\n\tmax_depth\x18\x03 \x01(\x05\x12\x15\n\rmin_relevance\x18\x04 \x01(\x02\x12\x13\n\x0bmax_results\x18\x05 \x01(\x05"\x9a\x01\n\x14RetrievalDFSResponse\x12\x34\n\x06\x63hunks\x18\x01 \x03(\x0b\x32$.confuse.retrieval.v1.RetrievedChunk\x12\x15\n\rnodes_visited\x18\x02 \x01(\x05\x12\x1a\n\x12\x63ompletion_reached\x18\x03 \x01(\x08\x12\x19\n\x11traversal_time_ms\x18\x04 \x01(\x02"\xaf\x01\n\x13HybridSearchRequest\x12\x12\n\nquery_text\x18\x01 \x01(\t\x12\x15\n\rquery_vectors\x18\x02 \x03(\x02\x12\r\n\x05limit\x18\x03 \x01(\x05\x12\x1c\n\x14similarity_threshold\x18\x04 \x01(\x02\x12\x11\n\tdfs_depth\x18\x05 \x01(\x05\x12\x19\n\x11\x64\x66s_min_relevance\x18\x06 \x01(\x02\x12\x12\n\nsource_ids\x18\x07 \x03(\t"\xae\x01\n\x14HybridSearchResponse\x12\x34\n\x06\x63hunks\x18\x01 \x03(\x0b\x32$.confuse.retrieval.v1.RetrievedChunk\x12\x16\n\x0evector_matches\x18\x02 \x01(\x05\x12\x15\n\rgraph_matches\x18\x03 \x01(\x05\x12\x1a\n\x12\x63ompletion_reached\x18\x04 \x01(\x08\x12\x15\n\rtotal_time_ms\x18\x05 \x01(\x02"\x18\n\x16RetrievalHealthRequest"|\n\x17RetrievalHealthResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x1a\n\x12\x66\x61lkordb_connected\x18\x03 \x01(\x08\x12$\n\x1c\x65mbeddings_service_connected\x18\x04 \x01(\x08\x32\x8d\x04\n\x10RetrievalService\x12Y\n\x08Retrieve\x12%.confuse.retrieval.v1.RetrieveRequest\x1a&.confuse.retrieval.v1.RetrieveResponse\x12\x65\n\x06Search\x12,.confuse.retrieval.v1.RetrievalSearchRequest\x1a-.confuse.retrieval.v1.RetrievalSearchResponse\x12\x64\n\x0b\x44\x46STraverse\x12).confuse.retrieval.v1.RetrievalDFSRequest\x1a*.confuse.retrieval.v1.RetrievalDFSResponse\x12\x65\n\x0cHybridSearch\x12).confuse.retrieval.v1.HybridSearchRequest\x1a*.confuse.retrieval.v1.HybridSearchResponse\x12j\n\x0bHealthCheck\x12,.confuse.retrieval.v1.RetrievalHealthRequest\x1a-.confuse.retrieval.v1.RetrievalHealthResponseb\x06proto3'
+)
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'retrieval_pb2', _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "retrieval_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-  DESCRIPTOR._loaded_options = None
-  _globals['_RETRIEVEREQUEST_OPTIONSENTRY']._loaded_options = None
-  _globals['_RETRIEVEREQUEST_OPTIONSENTRY']._serialized_options = b'8\001'
-  _globals['_SCOREDRESULT_METADATAENTRY']._loaded_options = None
-  _globals['_SCOREDRESULT_METADATAENTRY']._serialized_options = b'8\001'
-  _globals['_RETRIEVALSEARCHREQUEST_OPTIONSENTRY']._loaded_options = None
-  _globals['_RETRIEVALSEARCHREQUEST_OPTIONSENTRY']._serialized_options = b'8\001'
-  _globals['_RETRIEVEDCHUNK_METADATAENTRY']._loaded_options = None
-  _globals['_RETRIEVEDCHUNK_METADATAENTRY']._serialized_options = b'8\001'
-  _globals['_RETRIEVEREQUEST']._serialized_start=42
-  _globals['_RETRIEVEREQUEST']._serialized_end=226
-  _globals['_RETRIEVEREQUEST_OPTIONSENTRY']._serialized_start=180
-  _globals['_RETRIEVEREQUEST_OPTIONSENTRY']._serialized_end=226
-  _globals['_RETRIEVERESPONSE']._serialized_start=229
-  _globals['_RETRIEVERESPONSE']._serialized_end=589
-  _globals['_SCOREDRESULT']._serialized_start=592
-  _globals['_SCOREDRESULT']._serialized_end=936
-  _globals['_SCOREDRESULT_METADATAENTRY']._serialized_start=889
-  _globals['_SCOREDRESULT_METADATAENTRY']._serialized_end=936
-  _globals['_QUERYCHUNKINFO']._serialized_start=938
-  _globals['_QUERYCHUNKINFO']._serialized_end=1000
-  _globals['_RETRIEVALSEARCHREQUEST']._serialized_start=1003
-  _globals['_RETRIEVALSEARCHREQUEST']._serialized_end=1239
-  _globals['_RETRIEVALSEARCHREQUEST_OPTIONSENTRY']._serialized_start=180
-  _globals['_RETRIEVALSEARCHREQUEST_OPTIONSENTRY']._serialized_end=226
-  _globals['_RETRIEVEDCHUNK']._serialized_start=1242
-  _globals['_RETRIEVEDCHUNK']._serialized_end=1487
-  _globals['_RETRIEVEDCHUNK_METADATAENTRY']._serialized_start=889
-  _globals['_RETRIEVEDCHUNK_METADATAENTRY']._serialized_end=936
-  _globals['_RETRIEVALSEARCHRESPONSE']._serialized_start=1489
-  _globals['_RETRIEVALSEARCHRESPONSE']._serialized_end=1607
-  _globals['_RETRIEVALDFSREQUEST']._serialized_start=1610
-  _globals['_RETRIEVALDFSREQUEST']._serialized_end=1742
-  _globals['_RETRIEVALDFSRESPONSE']._serialized_start=1745
-  _globals['_RETRIEVALDFSRESPONSE']._serialized_end=1899
-  _globals['_HYBRIDSEARCHREQUEST']._serialized_start=1902
-  _globals['_HYBRIDSEARCHREQUEST']._serialized_end=2077
-  _globals['_HYBRIDSEARCHRESPONSE']._serialized_start=2080
-  _globals['_HYBRIDSEARCHRESPONSE']._serialized_end=2254
-  _globals['_RETRIEVALHEALTHREQUEST']._serialized_start=2256
-  _globals['_RETRIEVALHEALTHREQUEST']._serialized_end=2280
-  _globals['_RETRIEVALHEALTHRESPONSE']._serialized_start=2282
-  _globals['_RETRIEVALHEALTHRESPONSE']._serialized_end=2406
-  _globals['_RETRIEVALSERVICE']._serialized_start=2409
-  _globals['_RETRIEVALSERVICE']._serialized_end=2934
+    DESCRIPTOR._loaded_options = None
+    _globals["_RETRIEVEREQUEST_OPTIONSENTRY"]._loaded_options = None
+    _globals["_RETRIEVEREQUEST_OPTIONSENTRY"]._serialized_options = b"8\001"
+    _globals["_SCOREDRESULT_METADATAENTRY"]._loaded_options = None
+    _globals["_SCOREDRESULT_METADATAENTRY"]._serialized_options = b"8\001"
+    _globals["_RETRIEVALSEARCHREQUEST_OPTIONSENTRY"]._loaded_options = None
+    _globals["_RETRIEVALSEARCHREQUEST_OPTIONSENTRY"]._serialized_options = b"8\001"
+    _globals["_RETRIEVEDCHUNK_METADATAENTRY"]._loaded_options = None
+    _globals["_RETRIEVEDCHUNK_METADATAENTRY"]._serialized_options = b"8\001"
+    _globals["_RETRIEVEREQUEST"]._serialized_start = 42
+    _globals["_RETRIEVEREQUEST"]._serialized_end = 226
+    _globals["_RETRIEVEREQUEST_OPTIONSENTRY"]._serialized_start = 180
+    _globals["_RETRIEVEREQUEST_OPTIONSENTRY"]._serialized_end = 226
+    _globals["_RETRIEVERESPONSE"]._serialized_start = 229
+    _globals["_RETRIEVERESPONSE"]._serialized_end = 589
+    _globals["_SCOREDRESULT"]._serialized_start = 592
+    _globals["_SCOREDRESULT"]._serialized_end = 936
+    _globals["_SCOREDRESULT_METADATAENTRY"]._serialized_start = 889
+    _globals["_SCOREDRESULT_METADATAENTRY"]._serialized_end = 936
+    _globals["_QUERYCHUNKINFO"]._serialized_start = 938
+    _globals["_QUERYCHUNKINFO"]._serialized_end = 1000
+    _globals["_RETRIEVALSEARCHREQUEST"]._serialized_start = 1003
+    _globals["_RETRIEVALSEARCHREQUEST"]._serialized_end = 1239
+    _globals["_RETRIEVALSEARCHREQUEST_OPTIONSENTRY"]._serialized_start = 180
+    _globals["_RETRIEVALSEARCHREQUEST_OPTIONSENTRY"]._serialized_end = 226
+    _globals["_RETRIEVEDCHUNK"]._serialized_start = 1242
+    _globals["_RETRIEVEDCHUNK"]._serialized_end = 1487
+    _globals["_RETRIEVEDCHUNK_METADATAENTRY"]._serialized_start = 889
+    _globals["_RETRIEVEDCHUNK_METADATAENTRY"]._serialized_end = 936
+    _globals["_RETRIEVALSEARCHRESPONSE"]._serialized_start = 1489
+    _globals["_RETRIEVALSEARCHRESPONSE"]._serialized_end = 1607
+    _globals["_RETRIEVALDFSREQUEST"]._serialized_start = 1610
+    _globals["_RETRIEVALDFSREQUEST"]._serialized_end = 1742
+    _globals["_RETRIEVALDFSRESPONSE"]._serialized_start = 1745
+    _globals["_RETRIEVALDFSRESPONSE"]._serialized_end = 1899
+    _globals["_HYBRIDSEARCHREQUEST"]._serialized_start = 1902
+    _globals["_HYBRIDSEARCHREQUEST"]._serialized_end = 2077
+    _globals["_HYBRIDSEARCHRESPONSE"]._serialized_start = 2080
+    _globals["_HYBRIDSEARCHRESPONSE"]._serialized_end = 2254
+    _globals["_RETRIEVALHEALTHREQUEST"]._serialized_start = 2256
+    _globals["_RETRIEVALHEALTHREQUEST"]._serialized_end = 2280
+    _globals["_RETRIEVALHEALTHRESPONSE"]._serialized_start = 2282
+    _globals["_RETRIEVALHEALTHRESPONSE"]._serialized_end = 2406
+    _globals["_RETRIEVALSERVICE"]._serialized_start = 2409
+    _globals["_RETRIEVALSERVICE"]._serialized_end = 2934
 # @@protoc_insertion_point(module_scope)

@@ -37,21 +37,30 @@ class FalkorDBClient:
         self._password = password
         self._client: redis.Redis | None = None
 
-    from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+    from tenacity import (
+        retry,
+        stop_after_attempt,
+        wait_exponential,
+        retry_if_exception_type,
+    )
 
     @retry(
         stop=stop_after_attempt(10),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type((redis.ConnectionError, redis.TimeoutError, ConnectionError, OSError)),
+        retry=retry_if_exception_type(
+            (redis.ConnectionError, redis.TimeoutError, ConnectionError, OSError)
+        ),
         before_sleep=lambda retry_state: logger.warning(
             "FalkorDB connection attempt failed, retrying",
             attempt=retry_state.attempt_number,
-            error=str(retry_state.outcome.exception())
-        )
+            error=str(retry_state.outcome.exception()),
+        ),
     )
     async def connect(self) -> None:
         """Establish a connection to FalkorDB."""
-        logger.info(f"Attempting to connect to FalkorDB at {self._host}:{self._port}...")
+        logger.info(
+            f"Attempting to connect to FalkorDB at {self._host}:{self._port}..."
+        )
         kwargs = {
             "host": self._host,
             "port": self._port,
@@ -61,7 +70,7 @@ class FalkorDBClient:
             kwargs["password"] = self._password
             if self._username:
                 kwargs["username"] = self._username
-                
+
         self._client = redis.Redis(**kwargs)
         # Ping to verify connectivity
         await self._client.ping()  # type: ignore
@@ -108,18 +117,32 @@ class FalkorDBClient:
                 await self.query(vector_cypher)
                 logger.info("Vector index created successfully")
             except Exception as e:
-                if "already exists" not in str(e).lower() and "already indexed" not in str(e).lower():
-                    logger.warning("Failed to create vector index (might already exist)", error=str(e))
-                
+                if (
+                    "already exists" not in str(e).lower()
+                    and "already indexed" not in str(e).lower()
+                ):
+                    logger.warning(
+                        "Failed to create vector index (might already exist)",
+                        error=str(e),
+                    )
+
             # Create FTS Index
-            fts_cypher = "CALL db.idx.fulltext.createNodeIndex('Vector_Chunk', 'content')"
+            fts_cypher = (
+                "CALL db.idx.fulltext.createNodeIndex('Vector_Chunk', 'content')"
+            )
             try:
                 await self.query(fts_cypher)
                 logger.info("Full-Text Search index created successfully")
             except Exception as e:
-                if "already exists" not in str(e).lower() and "already registered" not in str(e).lower() and "already indexed" not in str(e).lower():
-                    logger.warning("Failed to create FTS index (might already exist)", error=str(e))
-                    
+                if (
+                    "already exists" not in str(e).lower()
+                    and "already registered" not in str(e).lower()
+                    and "already indexed" not in str(e).lower()
+                ):
+                    logger.warning(
+                        "Failed to create FTS index (might already exist)", error=str(e)
+                    )
+
             logger.info("Index initialization complete")
         except Exception as e:
             logger.error("Error during index initialization", error=str(e))

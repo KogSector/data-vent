@@ -25,50 +25,202 @@ logger = structlog.get_logger()
 
 STOP_WORDS: Set[str] = {
     # Articles & determiners
-    "a", "an", "the", "this", "that", "these", "those",
+    "a",
+    "an",
+    "the",
+    "this",
+    "that",
+    "these",
+    "those",
     # Prepositions
-    "in", "on", "at", "to", "for", "of", "with", "by", "from", "into",
-    "about", "between", "through", "during", "before", "after", "above",
-    "below", "up", "down", "out", "off", "over", "under",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "from",
+    "into",
+    "about",
+    "between",
+    "through",
+    "during",
+    "before",
+    "after",
+    "above",
+    "below",
+    "up",
+    "down",
+    "out",
+    "off",
+    "over",
+    "under",
     # Conjunctions
-    "and", "or", "but", "nor", "so", "yet", "both", "either", "neither",
+    "and",
+    "or",
+    "but",
+    "nor",
+    "so",
+    "yet",
+    "both",
+    "either",
+    "neither",
     # Pronouns
-    "i", "me", "my", "we", "us", "our", "you", "your", "he", "him", "his",
-    "she", "her", "it", "its", "they", "them", "their", "who", "whom",
+    "i",
+    "me",
+    "my",
+    "we",
+    "us",
+    "our",
+    "you",
+    "your",
+    "he",
+    "him",
+    "his",
+    "she",
+    "her",
+    "it",
+    "its",
+    "they",
+    "them",
+    "their",
+    "who",
+    "whom",
     # Auxiliary verbs
-    "is", "am", "are", "was", "were", "be", "been", "being",
-    "has", "have", "had", "do", "does", "did",
-    "will", "would", "shall", "should", "may", "might", "can", "could",
+    "is",
+    "am",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "has",
+    "have",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "shall",
+    "should",
+    "may",
+    "might",
+    "can",
+    "could",
     # Query filler
-    "what", "how", "where", "when", "why", "which",
-    "show", "tell", "give", "get", "find", "search",
-    "please", "help", "need", "want", "like",
-    "all", "any", "some", "each", "every", "no", "not",
-    "just", "only", "also", "very", "really", "quite",
-    "more", "most", "much", "many", "few", "less", "least",
-    "then", "than", "too", "here", "there", "now",
+    "what",
+    "how",
+    "where",
+    "when",
+    "why",
+    "which",
+    "show",
+    "tell",
+    "give",
+    "get",
+    "find",
+    "search",
+    "please",
+    "help",
+    "need",
+    "want",
+    "like",
+    "all",
+    "any",
+    "some",
+    "each",
+    "every",
+    "no",
+    "not",
+    "just",
+    "only",
+    "also",
+    "very",
+    "really",
+    "quite",
+    "more",
+    "most",
+    "much",
+    "many",
+    "few",
+    "less",
+    "least",
+    "then",
+    "than",
+    "too",
+    "here",
+    "there",
+    "now",
 }
 
 # ─── Relationship indicators ────────────────────────────────────────────────
 
 RELATIONSHIP_KEYWORDS: Set[str] = {
-    "related", "connects", "linked", "associated", "depends",
-    "references", "uses", "calls", "inherits", "implements",
-    "contains", "belongs", "owns", "maps", "extends",
-    "imports", "exports", "requires", "provides",
-    "between", "relationship", "connection", "dependency",
-    "parent", "child", "sibling", "ancestor", "descendant",
+    "related",
+    "connects",
+    "linked",
+    "associated",
+    "depends",
+    "references",
+    "uses",
+    "calls",
+    "inherits",
+    "implements",
+    "contains",
+    "belongs",
+    "owns",
+    "maps",
+    "extends",
+    "imports",
+    "exports",
+    "requires",
+    "provides",
+    "between",
+    "relationship",
+    "connection",
+    "dependency",
+    "parent",
+    "child",
+    "sibling",
+    "ancestor",
+    "descendant",
 }
 
 # ─── Action / attribute indicators ──────────────────────────────────────────
 
 ATTRIBUTE_KEYWORDS: Set[str] = {
-    "type", "name", "value", "status", "state", "count",
-    "size", "length", "format", "version", "date", "time",
-    "created", "updated", "modified", "deleted",
-    "config", "configuration", "setting", "parameter",
-    "property", "attribute", "field", "column",
-    "description", "summary", "title", "label",
+    "type",
+    "name",
+    "value",
+    "status",
+    "state",
+    "count",
+    "size",
+    "length",
+    "format",
+    "version",
+    "date",
+    "time",
+    "created",
+    "updated",
+    "modified",
+    "deleted",
+    "config",
+    "configuration",
+    "setting",
+    "parameter",
+    "property",
+    "attribute",
+    "field",
+    "column",
+    "description",
+    "summary",
+    "title",
+    "label",
 }
 
 
@@ -76,9 +228,9 @@ ATTRIBUTE_KEYWORDS: Set[str] = {
 class QueryChunk:
     """A decomposed chunk of the original query."""
 
-    text: str               # The chunk text (typically 1-3 meaningful words)
-    intent: str             # entity_lookup | relationship_query | attribute_search | action_query
-    weight: float           # Importance weight 0.0 - 1.0
+    text: str  # The chunk text (typically 1-3 meaningful words)
+    intent: str  # entity_lookup | relationship_query | attribute_search | action_query
+    weight: float  # Importance weight 0.0 - 1.0
     original_span: Tuple[int, int]  # (start, end) position in original query
     tokens: List[str] = field(default_factory=list)  # Individual tokens in this chunk
 
@@ -129,6 +281,7 @@ class QueryDecomposer:
         Returns DecompositionResult with ordered chunks.
         """
         import time
+
         start = time.perf_counter()
 
         if not query or not query.strip():
@@ -153,13 +306,15 @@ class QueryDecomposer:
 
         for text, span, tokens in ngrams:
             intent = self._classify_intent(tokens)
-            all_chunks.append(QueryChunk(
-                text=text,
-                intent=intent,
-                weight=0.0,  # assigned in next step
-                original_span=span,
-                tokens=tokens,
-            ))
+            all_chunks.append(
+                QueryChunk(
+                    text=text,
+                    intent=intent,
+                    weight=0.0,  # assigned in next step
+                    original_span=span,
+                    tokens=tokens,
+                )
+            )
 
         # Step 5: Assign weights
         all_chunks = self._assign_weights(all_chunks, query)
@@ -218,13 +373,15 @@ class QueryDecomposer:
             if len(text) >= self.min_chunk_length:
                 start_pos = original.lower().find(text.lower())
                 span = (start_pos, start_pos + len(text)) if start_pos >= 0 else (0, 0)
-                entities.append(QueryChunk(
-                    text=text,
-                    intent="entity_lookup",
-                    weight=1.0,  # Quoted = highest priority
-                    original_span=span,
-                    tokens=text.split(),
-                ))
+                entities.append(
+                    QueryChunk(
+                        text=text,
+                        intent="entity_lookup",
+                        weight=1.0,  # Quoted = highest priority
+                        original_span=span,
+                        tokens=text.split(),
+                    )
+                )
                 remaining = remaining.replace(match.group(0), " ")
 
         # 2. Technical identifiers (snake_case, camelCase, dotted paths)
@@ -235,13 +392,15 @@ class QueryDecomposer:
             if len(text) >= self.min_chunk_length:
                 start_pos = original.lower().find(text.lower())
                 span = (start_pos, start_pos + len(text)) if start_pos >= 0 else (0, 0)
-                entities.append(QueryChunk(
-                    text=text,
-                    intent="entity_lookup",
-                    weight=0.95,
-                    original_span=span,
-                    tokens=[text],
-                ))
+                entities.append(
+                    QueryChunk(
+                        text=text,
+                        intent="entity_lookup",
+                        weight=0.95,
+                        original_span=span,
+                        tokens=[text],
+                    )
+                )
                 remaining = remaining.replace(text, " ", 1)
 
         # 3. UPPER_CASE constants
@@ -249,13 +408,15 @@ class QueryDecomposer:
             text = match.group(1)
             start_pos = original.find(text)
             span = (start_pos, start_pos + len(text)) if start_pos >= 0 else (0, 0)
-            entities.append(QueryChunk(
-                text=text,
-                intent="entity_lookup",
-                weight=0.9,
-                original_span=span,
-                tokens=[text],
-            ))
+            entities.append(
+                QueryChunk(
+                    text=text,
+                    intent="entity_lookup",
+                    weight=0.9,
+                    original_span=span,
+                    tokens=[text],
+                )
+            )
             remaining = remaining.replace(text, " ", 1)
 
         remaining = re.sub(r"\s+", " ", remaining).strip()

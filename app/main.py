@@ -67,19 +67,23 @@ def get_pipeline():
 async def lifespan(app: FastAPI):
     """Application lifespan manager — initialize and cleanup services."""
     global _retriever, _decomposer, _dispatcher, _aggregator
-    
-    logger.info("data_vent_starting",
-                port=settings.APP_PORT,
-                grpc_port=settings.GRPC_PORT,
-                environment=settings.ENVIRONMENT)
-    
+
+    logger.info(
+        "data_vent_starting",
+        port=settings.APP_PORT,
+        grpc_port=settings.GRPC_PORT,
+        environment=settings.ENVIRONMENT,
+    )
+
     # Initialise FalkorDB
     falkordb_client = build_client_from_settings(settings)
     await falkordb_client.connect()
     await falkordb_client.initialize_indexes()
 
     # Wrap in IntelligentRetriever
-    _retriever = IntelligentRetriever(falkordb_client=falkordb_client, settings=settings)
+    _retriever = IntelligentRetriever(
+        falkordb_client=falkordb_client, settings=settings
+    )
 
     # Initialize pipeline components
     _decomposer = QueryDecomposer(max_chunks=settings.PIPELINE_MAX_QUERY_CHUNKS)
@@ -96,19 +100,21 @@ async def lifespan(app: FastAPI):
         graph_weight=settings.PIPELINE_GRAPH_WEIGHT,
         cross_chunk_weight=settings.PIPELINE_CROSS_CHUNK_WEIGHT,
     )
-    
-    logger.info("retrieval_pipeline_initialized",
-                max_chunks=settings.PIPELINE_MAX_QUERY_CHUNKS,
-                vector_top_k=settings.PIPELINE_VECTOR_TOP_K,
-                dfs_depth=settings.PIPELINE_DFS_DEPTH)
-    
+
+    logger.info(
+        "retrieval_pipeline_initialized",
+        max_chunks=settings.PIPELINE_MAX_QUERY_CHUNKS,
+        vector_top_k=settings.PIPELINE_VECTOR_TOP_K,
+        dfs_depth=settings.PIPELINE_DFS_DEPTH,
+    )
+
     # Start gRPC server in background
     grpc_task = asyncio.create_task(_start_grpc_background())
-    
+
     logger.info("data_vent_started", status="ready")
-    
+
     yield
-    
+
     # Cleanup
     logger.info("data_vent_shutting_down")
     await _retriever.close()
@@ -120,9 +126,11 @@ async def _start_grpc_background():
     """Start gRPC server in background."""
     try:
         from app.grpc_server import start_grpc_server
+
         await start_grpc_server(_retriever, _decomposer, _dispatcher, _aggregator)
     except Exception as e:
         logger.error("grpc_server_failed", error=str(e))
+
 
 app = FastAPI(
     title="Data Vent — Intelligent Retrieval Engine",
@@ -140,8 +148,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class RetrieveRequest(BaseModel):
     """Request for the unified retrieval pipeline."""
+
     intent: str
     keywords: List[str]
     limit: int = Field(default=20, ge=1, le=200)
@@ -151,6 +161,7 @@ class RetrieveRequest(BaseModel):
 
 class ScoredChunkResponse(BaseModel):
     """A single scored chunk in the response."""
+
     chunk_id: str
     content: str
     final_score: float
@@ -166,6 +177,7 @@ class ScoredChunkResponse(BaseModel):
 
 class QueryChunkResponse(BaseModel):
     """Info about a decomposed query chunk."""
+
     text: str
     intent: str
     weight: float
@@ -173,6 +185,7 @@ class QueryChunkResponse(BaseModel):
 
 class RetrieveResponse(BaseModel):
     """Response from the unified retrieval pipeline."""
+
     results: List[ScoredChunkResponse]
     total_results: int
     unique_sources: int
@@ -188,16 +201,19 @@ class RetrieveResponse(BaseModel):
 
 class RetrieveBatchRequest(BaseModel):
     """Batch request for the unified retrieval pipeline."""
+
     requests: List[RetrieveRequest]
 
 
 class RetrieveBatchResponse(BaseModel):
     """Response containing results from multiple queries executed in parallel."""
+
     responses: List[RetrieveResponse]
     total_batch_time_ms: float
 
 
 # â”€â”€â”€ Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
 
 @app.get("/health")
 async def health_check():
@@ -220,22 +236,31 @@ async def retrieve(request: RetrieveRequest, req: Request):
     1. Decompose query into semantic chunks
     2. Parallel search across all chunks in FalkorDB
     3. Aggregate, score-fuse, and rank results
-    
+
     This is the primary endpoint for client-connector.
     """
     if not _retriever or not _decomposer or not _dispatcher or not _aggregator:
         from fastapi import HTTPException
-        raise HTTPException(status_code=503, detail="Pipeline components not initialized")
+
+        raise HTTPException(
+            status_code=503, detail="Pipeline components not initialized"
+        )
 
     request_id = req.headers.get("x-request-id", str(uuid.uuid4()))
     structlog.contextvars.bind_contextvars(request_id=request_id)
-    logger.info("retrieval_request_received", intent=request.intent, keywords=request.keywords, limit=request.limit, source_ids=request.source_ids)
+    logger.info(
+        "retrieval_request_received",
+        intent=request.intent,
+        keywords=request.keywords,
+        limit=request.limit,
+        source_ids=request.source_ids,
+    )
 
     start_time = time.perf_counter()
-    
+
     # 1. Decompose Intent
     decomp_result = await _decomposer.decompose(request.intent)
-    
+
     # Generate explicit chunks from keywords
     keyword_chunks = [
         QueryChunk(
@@ -243,26 +268,35 @@ async def retrieve(request: RetrieveRequest, req: Request):
             intent="entity_lookup",
             weight=1.0,
             original_span=(0, 0),
-            tokens=kw.split()
+            tokens=kw.split(),
         )
-        for kw in request.keywords if kw.strip()
+        for kw in request.keywords
+        if kw.strip()
     ]
-    
+
     # Combine chunks
     all_chunks = keyword_chunks + decomp_result.chunks
-    
-    logger.info("query_decomposed", chunks_count=len(all_chunks), decomposition_time_ms=decomp_result.decomposition_time_ms)
-    
+
+    logger.info(
+        "query_decomposed",
+        chunks_count=len(all_chunks),
+        decomposition_time_ms=decomp_result.decomposition_time_ms,
+    )
+
     # 2. Parallel Search
     search_result = await _dispatcher.dispatch(all_chunks, _retriever)
     logger.info("parallel_search_completed", search_time_ms=search_result.total_time_ms)
-    
+
     # 3. Aggregate
-    agg_result = await _aggregator.aggregate(search_result, original_query=request.intent, limit=request.limit)
-    logger.info("results_aggregated", aggregation_time_ms=agg_result.aggregation_time_ms)
-    
+    agg_result = await _aggregator.aggregate(
+        search_result, original_query=request.intent, limit=request.limit
+    )
+    logger.info(
+        "results_aggregated", aggregation_time_ms=agg_result.aggregation_time_ms
+    )
+
     total_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
-    
+
     results = [
         ScoredChunkResponse(
             chunk_id=c.chunk_id,
@@ -276,16 +310,22 @@ async def retrieve(request: RetrieveRequest, req: Request):
             document_id=c.document_id,
             metadata=c.metadata,
             matched_by_chunks=c.matched_by_chunks,
-        ) for c in agg_result.chunks
+        )
+        for c in agg_result.chunks
     ]
-    
+
     query_chunks = [
         QueryChunkResponse(text=c.text, intent=c.intent, weight=c.weight)
         for c in all_chunks
     ]
-    
-    logger.info("retrieval_pipeline_completed", intent=request.intent, total_results=len(results), total_time_ms=total_time_ms)
-    
+
+    logger.info(
+        "retrieval_pipeline_completed",
+        intent=request.intent,
+        total_results=len(results),
+        total_time_ms=total_time_ms,
+    )
+
     return RetrieveResponse(
         results=results,
         total_results=agg_result.total_results,
@@ -307,17 +347,21 @@ async def retrieve_batch(request: RetrieveBatchRequest, req: Request):
     Execute multiple retrieval requests concurrently.
     """
     start_time = time.perf_counter()
-    
+
     tasks = [retrieve(req_item, req) for req_item in request.requests]
     responses = await asyncio.gather(*tasks)
-    
+
     total_batch_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
-    logger.info("batch_retrieval_completed", total_requests=len(request.requests), total_batch_time_ms=total_batch_time_ms)
-    
-    return RetrieveBatchResponse(
-        responses=responses,
-        total_batch_time_ms=total_batch_time_ms
+    logger.info(
+        "batch_retrieval_completed",
+        total_requests=len(request.requests),
+        total_batch_time_ms=total_batch_time_ms,
     )
+
+    return RetrieveBatchResponse(
+        responses=responses, total_batch_time_ms=total_batch_time_ms
+    )
+
 
 @app.post("/api/v1/search")
 async def search(request: dict):
@@ -369,6 +413,7 @@ async def hybrid_search(request: dict):
 
 try:
     from app.routes import status
+
     app.include_router(status.router, prefix="/api/v1/status", tags=["status"])
 except ImportError:
     logger.info("optional_routers_not_found")

@@ -1,6 +1,7 @@
 """
 Data Vent — Configuration Management
 """
+
 from typing import Optional
 from pydantic_settings import BaseSettings
 from pydantic import Field
@@ -27,7 +28,6 @@ class Settings(BaseSettings):
     FALKORDB_SIMILARITY_THRESHOLD: float
     FALKORDB_MAX_RESULTS: int
 
-
     # ── Graphify (new backend — feature-flagged) ──────────────────────────────
     # Removed as Graphify is deprecated
 
@@ -37,7 +37,6 @@ class Settings(BaseSettings):
     OLLAMA_URL: Optional[str] = "http://localhost:11434"
     CLIENT_CONNECTOR_URL: str
     CLIENT_CONNECTOR_GRPC_ADDR: str
-
 
     # ── Retrieval Pipeline ────────────────────────────────────────────────────
     PIPELINE_MAX_QUERY_CHUNKS: int = Field(default=5)

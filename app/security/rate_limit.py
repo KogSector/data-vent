@@ -4,6 +4,7 @@ Rate limiting middleware for FastAPI services.
 In-memory sliding window rate limiter with per-path limits
 and standard X-RateLimit-* response headers.
 """
+
 import os
 import time
 from collections import defaultdict
@@ -32,9 +33,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     ):
         super().__init__(app)
         self.default_limit = int(os.getenv("RATE_LIMIT_DEFAULT", str(default_limit)))
-        self.search_limit = int(os.getenv("RATE_LIMIT_SEARCH", str(search_limit or default_limit // 2)))
-        self.sources_limit = int(os.getenv("RATE_LIMIT_SOURCES", str(sources_limit or default_limit)))
-        self.sync_limit = int(os.getenv("RATE_LIMIT_SYNC", str(sync_limit or default_limit // 5)))
+        self.search_limit = int(
+            os.getenv("RATE_LIMIT_SEARCH", str(search_limit or default_limit // 2))
+        )
+        self.sources_limit = int(
+            os.getenv("RATE_LIMIT_SOURCES", str(sources_limit or default_limit))
+        )
+        self.sync_limit = int(
+            os.getenv("RATE_LIMIT_SYNC", str(sync_limit or default_limit // 5))
+        )
         self.window_secs = window_secs
         if skip_rate_limiting is not None:
             self.skip = skip_rate_limiting
@@ -66,7 +73,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return real_ip
         return request.client.host if request.client else "unknown"
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         if self.skip:
             return await call_next(request)
 
@@ -91,10 +100,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         count = len(self._counters[key])
 
         if count > limit:
-            logger.warning("Rate limit exceeded", client=client_id, path=path, count=count, limit=limit)
+            logger.warning(
+                "Rate limit exceeded",
+                client=client_id,
+                path=path,
+                count=count,
+                limit=limit,
+            )
             return JSONResponse(
                 status_code=429,
-                content={"error": {"code": "RATE_LIMITED", "message": "Too many requests"}},
+                content={
+                    "error": {"code": "RATE_LIMITED", "message": "Too many requests"}
+                },
                 headers={
                     "X-RateLimit-Limit": str(limit),
                     "X-RateLimit-Remaining": "0",

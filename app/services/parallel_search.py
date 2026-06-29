@@ -9,10 +9,13 @@ import asyncio
 import structlog
 import time
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any
+from typing import List, Optional
 
 from app.services.query_decomposer import QueryChunk
-from app.services.intelligent_retriever import IntelligentRetriever, SearchResult as ChunkNode
+from app.services.intelligent_retriever import (
+    IntelligentRetriever,
+    SearchResult as ChunkNode,
+)
 
 logger = structlog.get_logger()
 
@@ -126,10 +129,12 @@ class ParallelSearchDispatcher:
                     chunk=chunks[i].text,
                     error=str(result),
                 )
-                chunk_results.append(ChunkSearchResult(
-                    query_chunk=chunks[i],
-                    error=str(result),
-                ))
+                chunk_results.append(
+                    ChunkSearchResult(
+                        query_chunk=chunks[i],
+                        error=str(result),
+                    )
+                )
                 failed += 1
             elif isinstance(result, ChunkSearchResult):
                 chunk_results.append(result)
@@ -174,18 +179,14 @@ class ParallelSearchDispatcher:
                 self._do_search(chunk, query_vector, retriever),
                 timeout=self.per_chunk_timeout,
             )
-            result.search_time_ms = round(
-                (time.perf_counter() - start) * 1000, 2
-            )
+            result.search_time_ms = round((time.perf_counter() - start) * 1000, 2)
             return result
         except asyncio.TimeoutError:
             logger.warning("chunk_search_timeout", chunk=chunk.text)
             return ChunkSearchResult(
                 query_chunk=chunk,
                 error="timeout",
-                search_time_ms=round(
-                    (time.perf_counter() - start) * 1000, 2
-                ),
+                search_time_ms=round((time.perf_counter() - start) * 1000, 2),
             )
 
     async def _do_search(
@@ -204,9 +205,12 @@ class ParallelSearchDispatcher:
                 query_vectors=query_vector,
                 limit=self.vector_top_k,
             )
-        
+
         if not vector_results:
-            logger.info("vector_search returned 0 results (or empty vector), falling back to text search", chunk=chunk.text)
+            logger.info(
+                "vector_search returned 0 results (or empty vector), falling back to text search",
+                chunk=chunk.text,
+            )
             vector_results = await retriever.text_search(
                 query=chunk.text,
                 limit=self.vector_top_k,

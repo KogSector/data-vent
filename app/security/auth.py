@@ -4,6 +4,7 @@ Authentication middleware for FastAPI services.
 Validates JWT tokens by calling the auth-middleware service.
 Supports auth bypass for development mode.
 """
+
 import os
 from dataclasses import dataclass, field
 from typing import Optional
@@ -23,6 +24,7 @@ security = HTTPBearer(auto_error=False)
 @dataclass
 class AuthenticatedUser:
     """Authenticated user extracted from JWT or API key."""
+
     id: str
     email: str
     name: Optional[str] = None
@@ -32,6 +34,7 @@ class AuthenticatedUser:
 
     def has_role(self, role: str) -> bool:
         return role in self.roles
+
 
 class AuthMiddleware:
     """
@@ -56,10 +59,10 @@ class AuthMiddleware:
         self.auth_grpc_url = auth_grpc_url or os.getenv(
             "AUTH_GRPC_URL", "localhost:50058"
         )
-            
+
         self._client = httpx.AsyncClient(timeout=5.0)
-        
-        # Initialize gRPC channel lazily or here? 
+
+        # Initialize gRPC channel lazily or here?
         # For simplicity in this common middleware, we'll initialize it here
         # but in a production scenario, we might want a persistent channel pool.
         try:
@@ -76,7 +79,7 @@ class AuthMiddleware:
             try:
                 request = auth_v1_pb2.ValidateTokenRequest(token=token)
                 response = await self._grpc_stub.ValidateToken(request, timeout=2.0)
-                
+
                 if response.valid:
                     return AuthenticatedUser(
                         id=response.user_id,
@@ -89,7 +92,9 @@ class AuthMiddleware:
                         detail=response.error or "Invalid token",
                     )
             except grpc.RpcError as e:
-                logger.warning("Auth gRPC call failed, falling back to HTTP", error=str(e))
+                logger.warning(
+                    "Auth gRPC call failed, falling back to HTTP", error=str(e)
+                )
             except HTTPException:
                 raise
             except Exception as e:
@@ -129,7 +134,7 @@ class AuthMiddleware:
             try:
                 request = auth_v1_pb2.ValidateApiKeyRequest(api_key=key)
                 response = await self._grpc_stub.ValidateApiKey(request, timeout=2.0)
-                
+
                 if response.valid:
                     return AuthenticatedUser(
                         id=response.user_id,
@@ -142,11 +147,16 @@ class AuthMiddleware:
                         detail=response.error or "Invalid API key",
                     )
             except grpc.RpcError as e:
-                logger.warning("Auth gRPC call failed for API key, falling back to HTTP", error=str(e))
+                logger.warning(
+                    "Auth gRPC call failed for API key, falling back to HTTP",
+                    error=str(e),
+                )
             except HTTPException:
                 raise
             except Exception as e:
-                logger.error("Unexpected gRPC error during API key validation", error=str(e))
+                logger.error(
+                    "Unexpected gRPC error during API key validation", error=str(e)
+                )
 
         # Fallback to HTTP
         try:
@@ -162,7 +172,7 @@ class AuthMiddleware:
             data = resp.json()
             return AuthenticatedUser(
                 id=data.get("user_id", data.get("id", "")),
-                email=data.get("email", f"api-key@confuse.dev"),
+                email=data.get("email", "api-key@confuse.dev"),
                 name=data.get("name"),
                 roles=data.get("scopes", data.get("roles", [])),
                 workspace_id=data.get("workspace_id"),
@@ -174,7 +184,9 @@ class AuthMiddleware:
                 detail="Authentication service unavailable",
             )
 
-    async def get_internal_token(self, api_key: str, user_id: str, provider: str) -> dict:
+    async def get_internal_token(
+        self, api_key: str, user_id: str, provider: str
+    ) -> dict:
         """
         Get auth token for a provider (internal call, prefers gRPC).
         """
@@ -182,38 +194,47 @@ class AuthMiddleware:
         if self._grpc_stub:
             try:
                 request = auth_v1_pb2.GetInternalTokenRequest(
-                    api_key=api_key,
-                    user_id=user_id,
-                    provider=provider
+                    api_key=api_key, user_id=user_id, provider=provider
                 )
                 response = await self._grpc_stub.GetInternalToken(request, timeout=3.0)
-                
+
                 if response.success:
                     return {
                         "success": True,
                         "provider": response.provider,
                         "access_token": response.access_token,
                         "refresh_token": response.refresh_token,
-                        "token_type": response.token_type
+                        "token_type": response.token_type,
                     }
                 else:
-                    logger.warning("Auth gRPC GetInternalToken failed", error=response.error)
+                    logger.warning(
+                        "Auth gRPC GetInternalToken failed", error=response.error
+                    )
             except grpc.RpcError as e:
-                logger.warning("Auth gRPC GetInternalToken call failed, falling back to HTTP", error=str(e))
+                logger.warning(
+                    "Auth gRPC GetInternalToken call failed, falling back to HTTP",
+                    error=str(e),
+                )
             except Exception as e:
-                logger.error("Unexpected gRPC error during token retrieval", error=str(e))
+                logger.error(
+                    "Unexpected gRPC error during token retrieval", error=str(e)
+                )
 
         # Fallback to HTTP
         try:
             resp = await self._client.post(
                 f"{self.auth_service_url}/api/auth/internal/tokens",
                 json={"userId": user_id, "provider": provider},
-                headers={"X-Api-Key": api_key}
+                headers={"X-Api-Key": api_key},
             )
             if resp.status_code == 200:
                 return resp.json()
             else:
-                logger.error("Auth service returned error for token retrieval", status=resp.status_code, body=resp.text)
+                logger.error(
+                    "Auth service returned error for token retrieval",
+                    status=resp.status_code,
+                    body=resp.text,
+                )
                 return {"success": False, "error": f"Status {resp.status_code}"}
         except Exception as e:
             logger.error("Auth service unreachable for token retrieval", error=str(e))
@@ -277,6 +298,7 @@ def get_current_user(
 ) -> AuthenticatedUser:
     """Dependency shortcut for required auth."""
     import asyncio
+
     return asyncio.get_event_loop().run_until_complete(
         _default_auth.required(request, credentials)
     )
@@ -288,6 +310,7 @@ def get_optional_user(
 ) -> Optional[AuthenticatedUser]:
     """Dependency shortcut for optional auth."""
     import asyncio
+
     return asyncio.get_event_loop().run_until_complete(
         _default_auth.optional(request, credentials)
     )

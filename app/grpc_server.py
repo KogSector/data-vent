@@ -3,7 +3,7 @@ Data Vent - gRPC Server
 Serves retrieval RPCs for the distributed pipeline.
 Includes the full Retrieve RPC for the decompose → search → aggregate pipeline.
 """
-import asyncio
+
 import time
 import grpc
 from concurrent import futures
@@ -24,6 +24,7 @@ logger = structlog.get_logger()
 try:
     from app.proto import retrieval_pb2
     from app.proto import retrieval_pb2_grpc
+
     GRPC_STUBS_AVAILABLE = True
 except ImportError:
     GRPC_STUBS_AVAILABLE = False
@@ -32,7 +33,7 @@ except ImportError:
 
 class RetrievalServicer:
     """gRPC servicer for data-vent retrieval operations."""
-    
+
     def __init__(
         self,
         retriever: IntelligentRetriever,
@@ -44,51 +45,53 @@ class RetrievalServicer:
         self.decomposer = decomposer
         self.dispatcher = dispatcher
         self.aggregator = aggregator
-    
+
     async def Retrieve(self, request, context):
         """Handle full retrieval pipeline: decompose → parallel search → aggregate."""
         pipeline_start = time.perf_counter()
-        
+
         if not self.decomposer or not self.dispatcher or not self.aggregator:
             context.set_code(grpc.StatusCode.UNAVAILABLE)
             context.set_details("Pipeline not initialized")
             return retrieval_pb2.RetrieveResponse()
-        
+
         # Step 1: Decompose
         decomposition = await self.decomposer.decompose(request.query)
-        
+
         # Step 2: Parallel search
         parallel_result = await self.dispatcher.dispatch(
             chunks=decomposition.chunks,
             retriever=self.retriever,
         )
-        
+
         # Step 3: Aggregate
         aggregated = await self.aggregator.aggregate(
             parallel_result=parallel_result,
             original_query=request.query,
             limit=request.limit or 20,
         )
-        
+
         total_time = (time.perf_counter() - pipeline_start) * 1000
-        
+
         # Build response
         results = []
         for c in aggregated.chunks:
-            results.append(retrieval_pb2.ScoredResult(
-                chunk_id=c.chunk_id,
-                content=c.content,
-                final_score=c.final_score,
-                vector_score=c.vector_score,
-                graph_score=c.graph_score,
-                cross_chunk_boost=c.cross_chunk_boost,
-                chunk_type=c.chunk_type,
-                source_id=c.source_id,
-                document_id=c.document_id,
-                metadata=c.metadata,
-                matched_by_chunks=c.matched_by_chunks,
-            ))
-        
+            results.append(
+                retrieval_pb2.ScoredResult(
+                    chunk_id=c.chunk_id,
+                    content=c.content,
+                    final_score=c.final_score,
+                    vector_score=c.vector_score,
+                    graph_score=c.graph_score,
+                    cross_chunk_boost=c.cross_chunk_boost,
+                    chunk_type=c.chunk_type,
+                    source_id=c.source_id,
+                    document_id=c.document_id,
+                    metadata=c.metadata,
+                    matched_by_chunks=c.matched_by_chunks,
+                )
+            )
+
         query_chunks = [
             retrieval_pb2.QueryChunkInfo(
                 text=qc.text,
@@ -97,7 +100,7 @@ class RetrievalServicer:
             )
             for qc in decomposition.chunks
         ]
-        
+
         return retrieval_pb2.RetrieveResponse(
             results=results,
             total_results=aggregated.total_results,
@@ -111,13 +114,15 @@ class RetrievalServicer:
             aggregation_time_ms=aggregated.aggregation_time_ms,
             total_time_ms=total_time,
         )
-    
+
     async def Search(self, request, context):
         """Handle semantic search via Graphify."""
         results = await self.retriever.retrieve(
             query=request.query_text if hasattr(request, "query_text") else "",
             num_results=request.limit or 10,
-            group_ids=list(request.source_ids) if hasattr(request, "source_ids") and request.source_ids else None,
+            group_ids=list(request.source_ids)
+            if hasattr(request, "source_ids") and request.source_ids
+            else None,
         )
 
         chunks = [
@@ -138,12 +143,14 @@ class RetrievalServicer:
             total=len(chunks),
             search_time_ms=0.0,
         )
-    
+
     async def DFSTraverse(self, request, context):
         """Graph-aware traversal via Graphify centre-node search."""
         results = await self.retriever.retrieve_with_context(
             query=getattr(request, "query_text", ""),
-            entity_uuid=list(request.start_chunk_ids)[0] if getattr(request, "start_chunk_ids", None) else "",
+            entity_uuid=list(request.start_chunk_ids)[0]
+            if getattr(request, "start_chunk_ids", None)
+            else "",
             num_results=getattr(request, "max_results", 50) or 50,
         )
 
@@ -172,7 +179,9 @@ class RetrievalServicer:
         results = await self.retriever.retrieve(
             query=getattr(request, "query_text", ""),
             num_results=getattr(request, "limit", 20) or 20,
-            group_ids=list(request.source_ids) if getattr(request, "source_ids", None) else None,
+            group_ids=list(request.source_ids)
+            if getattr(request, "source_ids", None)
+            else None,
         )
 
         chunks = [
@@ -195,7 +204,7 @@ class RetrievalServicer:
             completion_reached=True,
             total_time_ms=0.0,
         )
-    
+
     async def HealthCheck(self, request, context):
         """Handle health check."""
         return retrieval_pb2.RetrievalHealthResponse(
@@ -216,17 +225,17 @@ async def start_grpc_server(
     if not GRPC_STUBS_AVAILABLE:
         logger.warning("gRPC stubs not available, skipping gRPC server")
         return
-    
+
     server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
-    
+
     servicer = RetrievalServicer(retriever, decomposer, dispatcher, aggregator)
     retrieval_pb2_grpc.add_RetrievalServiceServicer_to_server(servicer, server)
-    
+
     listen_addr = f"{settings.GRPC_HOST}:{settings.GRPC_PORT}"
     server.add_insecure_port(listen_addr)
-    
+
     logger.info("data_vent_grpc_starting", address=listen_addr)
     await server.start()
     logger.info("data_vent_grpc_started", address=listen_addr)
-    
+
     await server.wait_for_termination()
