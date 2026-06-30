@@ -58,7 +58,8 @@ class IntelligentRetriever:
 
     def __init__(self, falkordb_client: FalkorDBClient, settings: Any) -> None:
         self._falkordb = falkordb_client
-        self.gemini_api_key = getattr(settings, "GEMINI_API_KEY", "")
+        self.gemini_api_key = settings.GEMINI_API_KEY
+        self.gemini_base_url = settings.GEMINI_BASE_URL
         self._http_client = httpx.AsyncClient(timeout=15.0)
 
     @property
@@ -77,7 +78,7 @@ class IntelligentRetriever:
                 return []
                 
             response = await self._http_client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key={self.gemini_api_key}",
+                f"{self.gemini_base_url}/v1beta/models/embedding-001:embedContent?key={self.gemini_api_key}",
                 json={
                     "model": "models/embedding-001",
                     "content": {

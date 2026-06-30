@@ -34,7 +34,9 @@ class Settings(BaseSettings):
     # ── Downstream Services ───────────────────────────────────────────────────
     EMBEDDINGS_GRPC_ADDR: str
     EMBEDDINGS_SERVICE_URL: str
-    GEMINI_API_KEY: str = Field(default="")
+    # LLM Settings
+    GEMINI_API_KEY: str = Field()
+    GEMINI_BASE_URL: str = Field()
     CLIENT_CONNECTOR_URL: str
     CLIENT_CONNECTOR_GRPC_ADDR: str
 
