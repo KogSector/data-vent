@@ -275,7 +275,7 @@ FALKORDB_MAX_RESULTS=100
 
 # Service URLs
 EMBEDDINGS_GRPC_ADDR=embeddings-service:50054
-EMBEDDINGS_SERVICE_URL=http://localhost:3001
+EMBEDDINGS_SERVICE_URL=https://embeddings-service-xmg6.onrender.com
 FEATURE_TOGGLE_SERVICE_URL=http://localhost:3099
 
 # Export Configuration
