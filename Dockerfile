@@ -4,13 +4,41 @@
 # Role: Intelligent retrieval and search
 # =============================================================================
 
-FROM python:3.12-slim
+# Stage 1: Builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for building packages and stubs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies into a virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY pyproject.toml ./
+RUN pip install --no-cache-dir .
+
+# Copy application and proto files
+COPY app ./app
+COPY proto ./proto
+
+# Generate gRPC stubs inside the app/proto directory
+RUN python -m grpc_tools.protoc \
+    -I proto \
+    --python_out=app/proto \
+    --grpc_python_out=app/proto \
+    proto/retrieval.proto || true
+
+# Stage 2: Runtime
+FROM python:3.12-slim AS runtime
+
+WORKDIR /app
+
+# Install runtime system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     dumb-init \
     && rm -rf /var/lib/apt/lists/*
@@ -18,29 +46,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create non-root user for security
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
-# Install Python dependencies
-COPY pyproject.toml ./
-RUN pip install --no-cache-dir -e ".[dev]" || pip install --no-cache-dir -e .
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy application code and proto with strict ownership
-COPY --chown=appuser:appgroup app ./app
-COPY --chown=appuser:appgroup proto ./proto
-
-# Generate gRPC stubs
-RUN python -m grpc_tools.protoc \
-    -I proto \
-    --python_out=app/proto \
-    --grpc_python_out=app/proto \
-    proto/retrieval.proto || true
-
-# Change ownership of the workspace
-RUN chown -R appuser:appgroup /app
+# Copy application code (with generated stubs) and proto with strict ownership
+COPY --chown=appuser:appgroup --from=builder /app/app ./app
+COPY --chown=appuser:appgroup --from=builder /app/proto ./proto
 
 # Switch to non-root user
 USER appuser
 
 # Environment explicitly defined for robustness
 ENV PORT=3005
+ENV PYTHONPATH=/app
 
 # Expose ports (HTTP + gRPC)
 EXPOSE 3005 50056
