@@ -215,6 +215,11 @@ class RetrieveBatchResponse(BaseModel):
 # â”€â”€â”€ Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
+@app.api_route("/", methods=["GET", "HEAD"])
+async def root_check():
+    return {"status": "ok"}
+
+
 @app.get("/health")
 async def health_check():
     return {
