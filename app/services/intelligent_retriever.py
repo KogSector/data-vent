@@ -78,9 +78,9 @@ class IntelligentRetriever:
                 return []
                 
             response = await self._http_client.post(
-                f"{self.gemini_base_url}/v1beta/models/embedding-001:embedContent?key={self.gemini_api_key}",
+                f"{self.gemini_base_url}/v1beta/models/embedding-003:embedContent?key={self.gemini_api_key}",
                 json={
-                    "model": "models/embedding-001",
+                    "model": "models/embedding-003",
                     "content": {
                         "parts": [{"text": query}]
                     }
