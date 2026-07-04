@@ -253,7 +253,7 @@ class ParallelSearchDispatcher:
             ]
             
             response = await retriever._http_client.post(
-                f"{retriever.gemini_base_url}/v1beta/models/embedding-003:batchEmbedContents?key={retriever.gemini_api_key}",
+                f"{retriever.gemini_base_url}/v1/models/embedding-003:batchEmbedContents?key={retriever.gemini_api_key}",
                 json={"requests": requests},
                 timeout=15.0,
             )
