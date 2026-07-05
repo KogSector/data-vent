@@ -60,6 +60,7 @@ class IntelligentRetriever:
         self._falkordb = falkordb_client
         self.gemini_api_key = settings.GEMINI_API_KEY
         self.gemini_base_url = settings.GEMINI_BASE_URL
+        self.embedding_model = settings.GEMINI_EMBEDDING_MODEL
         self._http_client = httpx.AsyncClient(timeout=15.0)
 
     @property
@@ -78,9 +79,9 @@ class IntelligentRetriever:
                 return []
                 
             response = await self._http_client.post(
-                f"{self.gemini_base_url}/v1/models/embedding-003:embedContent?key={self.gemini_api_key}",
+                f"{self.gemini_base_url}/v1/models/{self.embedding_model}:embedContent?key={self.gemini_api_key}",
                 json={
-                    "model": "models/embedding-003",
+                    "model": f"models/{self.embedding_model}",
                     "content": {
                         "parts": [{"text": query}]
                     }

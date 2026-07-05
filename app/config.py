@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     # LLM Settings
     GEMINI_API_KEY: str = Field()
     GEMINI_BASE_URL: str = Field(default="https://generativelanguage.googleapis.com")
+    GEMINI_EMBEDDING_MODEL: str = Field()
     CLIENT_CONNECTOR_URL: str
     CLIENT_CONNECTOR_GRPC_ADDR: str
 
