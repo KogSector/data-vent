@@ -53,7 +53,7 @@ impl RetrievalService for MyRetrievalService {
 
         let decomp_res = self.decomposer.decompose(&req.query).await;
         
-        let mut all_chunks = decomp_res.chunks;
+        let all_chunks = decomp_res.chunks;
         
         let search_res = self.dispatcher.dispatch(all_chunks.clone(), &self.retriever).await;
         let agg_res = self.aggregator.aggregate(search_res, &req.query, req.limit as usize);

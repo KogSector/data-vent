@@ -1,6 +1,6 @@
 use std::time::Instant;
 use tokio::time::timeout;
-use tracing::{error, info, warn};
+use tracing::info;
 
 use crate::services::intelligent_retriever::{IntelligentRetriever, SearchResult};
 use crate::services::query_decomposer::QueryChunk;
@@ -17,9 +17,9 @@ pub struct ParallelSearchResult {
     pub chunk_results: Vec<ChunkSearchResult>,
     pub total_vector_hits: usize,
     pub total_graph_hits: usize,
-    pub total_time_ms: f64,
+    pub _total_time_ms: f64,
     pub chunks_searched: usize,
-    pub chunks_failed: usize,
+    pub _chunks_failed: usize,
 }
 
 pub struct ParallelSearchDispatcher {
@@ -58,9 +58,9 @@ impl ParallelSearchDispatcher {
                 chunk_results: vec![],
                 total_vector_hits: 0,
                 total_graph_hits: 0,
-                total_time_ms: 0.0,
+                _total_time_ms: 0.0,
                 chunks_searched: 0,
-                chunks_failed: 0,
+                _chunks_failed: 0,
             };
         }
 
@@ -147,9 +147,9 @@ impl ParallelSearchDispatcher {
             chunk_results,
             total_vector_hits: total_vector,
             total_graph_hits: total_graph,
-            total_time_ms,
+            _total_time_ms: total_time_ms,
             chunks_searched,
-            chunks_failed: failed,
+            _chunks_failed: failed,
         }
     }
 }

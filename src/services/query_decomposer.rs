@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::collections::{HashSet, HashMap};
+use std::collections::HashSet;
 use tracing::info;
 
 #[derive(Debug, Clone)]
@@ -13,9 +13,9 @@ pub struct QueryChunk {
 
 #[derive(Debug, Clone)]
 pub struct DecompositionResult {
-    pub original_query: String,
+    pub _original_query: String,
     pub chunks: Vec<QueryChunk>,
-    pub total_chunks: usize,
+    pub _total_chunks: usize,
     pub decomposition_time_ms: f64,
 }
 
@@ -76,9 +76,9 @@ impl QueryDecomposer {
         let start = std::time::Instant::now();
         if query.trim().is_empty() {
             return DecompositionResult {
-                original_query: query.to_string(),
+                _original_query: query.to_string(),
                 chunks: vec![],
-                total_chunks: 0,
+                _total_chunks: 0,
                 decomposition_time_ms: 0.0,
             };
         }
@@ -111,8 +111,8 @@ impl QueryDecomposer {
               elapsed_ms);
 
         DecompositionResult {
-            original_query: query.to_string(),
-            total_chunks: deduplicated.len(),
+            _original_query: query.to_string(),
+            _total_chunks: deduplicated.len(),
             chunks: deduplicated,
             decomposition_time_ms: elapsed_ms,
         }

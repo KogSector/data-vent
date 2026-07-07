@@ -1,5 +1,6 @@
 use envconfig::Envconfig;
 
+#[allow(dead_code)]
 #[derive(Envconfig, Debug, Clone)]
 pub struct Config {
     #[envconfig(from = "DATA_VENT_PORT", default = "3002")]

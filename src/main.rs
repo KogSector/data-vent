@@ -4,7 +4,7 @@ mod grpc_server;
 
 use axum::{routing::{get, post}, Router, Json};
 use envconfig::Envconfig;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::{info, error};
@@ -117,7 +117,7 @@ struct RetrieveRequest {
     keywords: Vec<String>,
     #[serde(default = "default_limit")]
     limit: usize,
-    source_ids: Option<Vec<String>>,
+    _source_ids: Option<Vec<String>>,
 }
 fn default_limit() -> usize { 20 }
 

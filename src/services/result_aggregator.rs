@@ -17,7 +17,7 @@ pub struct ScoredChunk {
     pub document_id: String,
     pub metadata: serde_json::Value,
     pub matched_by_chunks: Vec<String>,
-    pub depth: i32,
+    pub _depth: i32,
 }
 
 pub struct AggregatedResult {
@@ -126,7 +126,7 @@ impl ResultAggregator {
                 document_id: acc.node.document_id,
                 metadata: acc.node.metadata,
                 matched_by_chunks: acc.matched_by.into_iter().collect(),
-                depth: acc.node.depth,
+                _depth: acc.node.depth,
             });
         }
 

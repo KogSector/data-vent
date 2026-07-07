@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use tracing::{error, info, warn};
 
 use crate::config::Config;
@@ -42,8 +41,8 @@ impl IntelligentRetriever {
         }
     }
 
-    pub async fn close(&self) {
-        let _ = self.falkordb_client.close().await;
+    pub async fn _close(&self) {
+        let _ = self.falkordb_client._close().await;
     }
 
     pub async fn vectorize_query(&self, query: &str) -> Vec<f64> {

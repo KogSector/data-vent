@@ -1,13 +1,12 @@
-use redis::AsyncCommands;
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{error, info};
+use tracing::info;
 
 use crate::config::Config;
 
 pub struct FalkorDBClient {
-    client: redis::Client,
+    _client: redis::Client,
     connection: Arc<Mutex<redis::aio::MultiplexedConnection>>,
     graph_name: String,
 }
@@ -25,7 +24,7 @@ impl FalkorDBClient {
         let connection = client.get_multiplexed_async_connection().await?;
         
         Ok(Self {
-            client,
+            _client: client,
             connection: Arc::new(Mutex::new(connection)),
             graph_name: config.falkordb_graph_name.clone(),
         })
@@ -58,7 +57,7 @@ impl FalkorDBClient {
         Ok(json_result)
     }
 
-    pub async fn close(&self) -> anyhow::Result<()> {
+    pub async fn _close(&self) -> anyhow::Result<()> {
         // Drop the multiplexed connection
         Ok(())
     }
