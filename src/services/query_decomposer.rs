@@ -2,6 +2,7 @@ use regex::Regex;
 use std::collections::{HashSet, HashMap};
 use tracing::info;
 
+#[derive(Debug, Clone)]
 pub struct QueryChunk {
     pub text: String,
     pub intent: String,
@@ -10,6 +11,7 @@ pub struct QueryChunk {
     pub tokens: Vec<String>,
 }
 
+#[derive(Debug, Clone)]
 pub struct DecompositionResult {
     pub original_query: String,
     pub chunks: Vec<QueryChunk>,

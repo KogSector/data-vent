@@ -142,13 +142,14 @@ impl ResultAggregator {
         }
         let unique_sources = unique_sources_set.len();
         let elapsed = start.elapsed().as_secs_f64() * 1000.0;
+        let total_results = scored.len();
 
         info!("results_aggregated total={} unique_sources={} completion={} time_ms={:.2}", 
-              scored.len(), unique_sources, completion, elapsed);
+              total_results, unique_sources, completion, elapsed);
 
         AggregatedResult {
             chunks: scored,
-            total_results: scored.len(), // Wait, total_results could mean the whole set before truncate? Python code does `total_results=len(scored)` which means after truncate.
+            total_results, // Wait, total_results could mean the whole set before truncate? Python code does `total_results=len(scored)` which means after truncate.
             unique_sources,
             vector_matches: parallel_result.total_vector_hits,
             graph_matches: parallel_result.total_graph_hits,
