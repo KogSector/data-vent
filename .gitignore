@@ -6,3 +6,4 @@ logs/
 .venv
 *.egg-info/
 .DS_Store
+target/
