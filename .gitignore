@@ -1,6 +1,5 @@
 *.env
-.env.map
-.env.secret
+.env.*
 __pycache__
 logs/
 .pytest_cache

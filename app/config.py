@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = Field(default="INFO")
 
     class Config:
-        env_file = (".env.map", ".env.secret")
+        env_file = (".env.map", ".env.secret", ".env.local")
         case_sensitive = False
         extra = "ignore"
 
