@@ -24,6 +24,7 @@ pub struct MyRetrievalService {
     decomposer: Arc<QueryDecomposer>,
     dispatcher: Arc<ParallelSearchDispatcher>,
     aggregator: Arc<ResultAggregator>,
+    default_graph_name: String,
 }
 
 impl MyRetrievalService {
@@ -32,12 +33,14 @@ impl MyRetrievalService {
         decomposer: Arc<QueryDecomposer>,
         dispatcher: Arc<ParallelSearchDispatcher>,
         aggregator: Arc<ResultAggregator>,
+        default_graph_name: String,
     ) -> Self {
         Self {
             retriever,
             decomposer,
             dispatcher,
             aggregator,
+            default_graph_name,
         }
     }
 }
@@ -55,7 +58,7 @@ impl RetrievalService for MyRetrievalService {
         
         let all_chunks = decomp_res.chunks;
         
-        let search_res = self.dispatcher.dispatch(all_chunks.clone(), &self.retriever).await;
+        let search_res = self.dispatcher.dispatch(&self.default_graph_name, all_chunks.clone(), &self.retriever).await;
         let agg_res = self.aggregator.aggregate(search_res, &req.query, req.limit as usize);
 
         let mut results = vec![];
@@ -114,7 +117,7 @@ impl RetrievalService for MyRetrievalService {
         let req = request.into_inner();
         let start = std::time::Instant::now();
         let vectors: Vec<f64> = req.query_vectors.iter().map(|f| *f as f64).collect();
-        let results = self.retriever.vector_search(&vectors, req.limit as usize).await;
+        let results = self.retriever.vector_search(&self.default_graph_name, &vectors, req.limit as usize).await;
         
         let mut chunks = vec![];
         for c in results {
@@ -150,6 +153,7 @@ impl RetrievalService for MyRetrievalService {
         let start = std::time::Instant::now();
         
         let results = self.retriever.dfs_traversal(
+            &self.default_graph_name,
             &req.start_chunk_ids,
             req.max_depth as usize,
             req.min_relevance as f64,
@@ -190,11 +194,10 @@ impl RetrievalService for MyRetrievalService {
         let req = request.into_inner();
         let start = std::time::Instant::now();
 
-        let results = self.retriever.retrieve(
+        let results = self.retriever.text_search(
+            &self.default_graph_name,
             &req.query_text,
-            Some(req.source_ids),
             req.limit as usize,
-            None
         ).await;
 
         let mut chunks = vec![];
@@ -244,10 +247,11 @@ pub async fn start_grpc_server(
     decomposer: Arc<QueryDecomposer>,
     dispatcher: Arc<ParallelSearchDispatcher>,
     aggregator: Arc<ResultAggregator>,
+    default_graph_name: String,
 ) -> anyhow::Result<()> {
     info!("Starting gRPC server on {}", addr);
     
-    let service = MyRetrievalService::new(retriever, decomposer, dispatcher, aggregator);
+    let service = MyRetrievalService::new(retriever, decomposer, dispatcher, aggregator, default_graph_name);
 
     Server::builder()
         .add_service(RetrievalServiceServer::new(service))

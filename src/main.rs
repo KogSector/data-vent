@@ -23,6 +23,7 @@ struct AppState {
     decomposer: Arc<QueryDecomposer>,
     dispatcher: Arc<ParallelSearchDispatcher>,
     aggregator: Arc<ResultAggregator>,
+    default_graph_name: String,
 }
 
 #[tokio::main]
@@ -40,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
     
     // Initialize FalkorDB
     let falkordb_client = FalkorDBClient::new(&config).await?;
-    let _ = falkordb_client.initialize_indexes().await;
+    let _ = falkordb_client.initialize_indexes(&config.falkordb_graph_name).await;
 
     // Initialize Services
     let retriever = Arc::new(IntelligentRetriever::new(falkordb_client, &config));
@@ -66,6 +67,7 @@ async fn main() -> anyhow::Result<()> {
         decomposer: decomposer.clone(),
         dispatcher: dispatcher.clone(),
         aggregator: aggregator.clone(),
+        default_graph_name: config.falkordb_graph_name.clone(),
     };
 
     // Start gRPC server in background
@@ -74,6 +76,7 @@ async fn main() -> anyhow::Result<()> {
     let grpc_decomposer = decomposer.clone();
     let grpc_dispatcher = dispatcher.clone();
     let grpc_aggregator = aggregator.clone();
+    let grpc_default_graph_name = config.falkordb_graph_name.clone();
     tokio::spawn(async move {
         if let Err(e) = grpc_server::start_grpc_server(
             grpc_addr,
@@ -81,6 +84,7 @@ async fn main() -> anyhow::Result<()> {
             grpc_decomposer,
             grpc_dispatcher,
             grpc_aggregator,
+            grpc_default_graph_name,
         ).await {
             error!("gRPC server failed: {}", e);
         }
@@ -118,11 +122,13 @@ struct RetrieveRequest {
     #[serde(default = "default_limit")]
     limit: usize,
     _source_ids: Option<Vec<String>>,
+    pub falkordb_graph_name: Option<String>,
 }
 fn default_limit() -> usize { 20 }
 
 async fn retrieve_handler(
     axum::extract::State(state): axum::extract::State<AppState>,
+    headers: axum::http::HeaderMap,
     Json(req): Json<RetrieveRequest>,
 ) -> Json<serde_json::Value> {
     let start = std::time::Instant::now();
@@ -139,7 +145,13 @@ async fn retrieve_handler(
         });
     }
 
-    let search_res = state.dispatcher.dispatch(all_chunks, &state.retriever).await;
+    let graph_name = if let Some(user_id) = headers.get("x-user-id").and_then(|h| h.to_str().ok()) {
+        format!("graph-{}", user_id)
+    } else {
+        req.falkordb_graph_name.unwrap_or(state.default_graph_name.clone())
+    };
+
+    let search_res = state.dispatcher.dispatch(&graph_name, all_chunks, &state.retriever).await;
     let agg_res = state.aggregator.aggregate(search_res, &req.intent, req.limit);
 
     let mut results = vec![];

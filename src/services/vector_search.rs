@@ -8,7 +8,6 @@ use crate::config::Config;
 pub struct FalkorDBClient {
     _client: redis::Client,
     connection: Arc<Mutex<redis::aio::MultiplexedConnection>>,
-    graph_name: String,
 }
 
 impl FalkorDBClient {
@@ -26,25 +25,24 @@ impl FalkorDBClient {
         Ok(Self {
             _client: client,
             connection: Arc::new(Mutex::new(connection)),
-            graph_name: config.falkordb_graph_name.clone(),
         })
     }
 
-    pub async fn initialize_indexes(&self) -> anyhow::Result<()> {
-        info!("Initializing FalkorDB indexes for graph: {}", self.graph_name);
+    pub async fn initialize_indexes(&self, graph_name: &str) -> anyhow::Result<()> {
+        info!("Initializing FalkorDB indexes for graph: {}", graph_name);
         // Equivalent to db.idx.vector.createNodeIndex
         let cypher = "CALL db.idx.vector.createNodeIndex('Vector_Chunk', 'embeddings', 768, 'COSINE')";
-        let _ = self.query(cypher).await;
+        let _ = self.query(graph_name, cypher).await;
         
         let fts_cypher = "CALL db.idx.fulltext.createNodeIndex('Vector_Chunk', 'content')";
-        let _ = self.query(fts_cypher).await;
+        let _ = self.query(graph_name, fts_cypher).await;
         Ok(())
     }
 
-    pub async fn query(&self, cypher: &str) -> anyhow::Result<Value> {
+    pub async fn query(&self, graph_name: &str, cypher: &str) -> anyhow::Result<Value> {
         let mut conn = self.connection.lock().await;
         let result: redis::Value = redis::cmd("GRAPH.QUERY")
-            .arg(&self.graph_name)
+            .arg(graph_name)
             .arg(cypher)
             .arg("--compact")
             .query_async(&mut *conn)

@@ -49,6 +49,7 @@ impl ParallelSearchDispatcher {
 
     pub async fn dispatch(
         &self,
+        graph_name: &str,
         chunks: Vec<QueryChunk>,
         retriever: &IntelligentRetriever,
     ) -> ParallelSearchResult {
@@ -93,16 +94,16 @@ impl ParallelSearchDispatcher {
                 let do_search = async {
                     let mut v_res = vec![];
                     if !vector.is_empty() {
-                        v_res = retriever.vector_search(&vector, self.vector_top_k).await;
+                        v_res = retriever.vector_search(graph_name, &vector, self.vector_top_k).await;
                     }
                     if v_res.is_empty() {
-                        v_res = retriever.text_search(&chunk_res.query_chunk.text, self.vector_top_k).await;
+                        v_res = retriever.text_search(graph_name, &chunk_res.query_chunk.text, self.vector_top_k).await;
                     }
                     
                     let mut g_res = vec![];
                     if !v_res.is_empty() {
                         let seed_ids: Vec<String> = v_res.iter().take(3).map(|r| r.chunk_id.clone()).collect();
-                        g_res = retriever.dfs_traversal(&seed_ids, self.dfs_depth, self.dfs_min_relevance, self.dfs_max_results).await;
+                        g_res = retriever.dfs_traversal(graph_name, &seed_ids, self.dfs_depth, self.dfs_min_relevance, self.dfs_max_results).await;
                     }
                     (v_res, g_res)
                 };

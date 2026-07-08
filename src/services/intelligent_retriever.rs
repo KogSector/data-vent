@@ -82,7 +82,7 @@ impl IntelligentRetriever {
         vec![]
     }
 
-    pub async fn vector_search(&self, query_vectors: &[f64], limit: usize) -> Vec<SearchResult> {
+    pub async fn vector_search(&self, graph_name: &str, query_vectors: &[f64], limit: usize) -> Vec<SearchResult> {
         if query_vectors.is_empty() {
             return vec![];
         }
@@ -96,7 +96,7 @@ impl IntelligentRetriever {
             limit, embedding_str
         );
 
-        match self.falkordb_client.query(&cypher).await {
+        match self.falkordb_client.query(graph_name, &cypher).await {
             Ok(val) => self.parse_graph_results(&val, true),
             Err(e) => {
                 error!("vector_search_failed: {}", e);
@@ -105,7 +105,7 @@ impl IntelligentRetriever {
         }
     }
 
-    pub async fn text_search(&self, query: &str, limit: usize) -> Vec<SearchResult> {
+    pub async fn text_search(&self, graph_name: &str, query: &str, limit: usize) -> Vec<SearchResult> {
         // Implement simple text search via regex for word boundaries and length > 2
         let words: Vec<&str> = query.split_whitespace().collect();
         let keywords: Vec<&str> = words.into_iter().filter(|w| w.len() > 2).collect();
@@ -121,7 +121,7 @@ impl IntelligentRetriever {
             fts_query, limit
         );
 
-        match self.falkordb_client.query(&cypher).await {
+        match self.falkordb_client.query(graph_name, &cypher).await {
             Ok(val) => self.parse_graph_results(&val, true),
             Err(e) => {
                 error!("text_search_failed: {}", e);
@@ -132,6 +132,7 @@ impl IntelligentRetriever {
 
     pub async fn dfs_traversal(
         &self,
+        graph_name: &str,
         start_chunk_ids: &[String],
         max_depth: usize,
         min_relevance: f64,
@@ -156,7 +157,7 @@ impl IntelligentRetriever {
             max_depth, ids_str, ids_str, max_results
         );
 
-        match self.falkordb_client.query(&cypher).await {
+        match self.falkordb_client.query(graph_name, &cypher).await {
             Ok(val) => {
                 let mut chunks = self.parse_graph_results(&val, false);
                 for chunk in &mut chunks {
@@ -259,6 +260,7 @@ impl IntelligentRetriever {
 
     pub async fn retrieve(
         &self,
+        graph_name: &str,
         query: &str,
         _group_ids: Option<Vec<String>>,
         num_results: usize,
@@ -268,12 +270,12 @@ impl IntelligentRetriever {
         let mut results = vec![];
 
         if !vector.is_empty() {
-            results = self.vector_search(&vector, num_results).await;
+            results = self.vector_search(graph_name, &vector, num_results).await;
         }
 
         if results.is_empty() {
             info!("Vector search returned 0 results, falling back to text search for: {}", query);
-            results = self.text_search(query, num_results).await;
+            results = self.text_search(graph_name, query, num_results).await;
         }
         results
     }
