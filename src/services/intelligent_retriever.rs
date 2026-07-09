@@ -258,6 +258,7 @@ impl IntelligentRetriever {
         results
     }
 
+    #[allow(dead_code)]
     pub async fn retrieve(
         &self,
         graph_name: &str,
