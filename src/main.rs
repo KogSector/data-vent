@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
     
     // Initialize FalkorDB
     let falkordb_client = FalkorDBClient::new(&config).await?;
-    let _ = falkordb_client.initialize_indexes(&config.falkordb_graph_name).await;
+    let _ = falkordb_client.initialize_indexes(&config.falkordb_graph_name, config.falkordb_vector_dimension).await;
 
     // Initialize Services
     let retriever = Arc::new(IntelligentRetriever::new(falkordb_client, &config));

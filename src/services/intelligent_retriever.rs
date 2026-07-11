@@ -22,8 +22,8 @@ pub struct SearchResult {
 pub struct IntelligentRetriever {
     falkordb_client: FalkorDBClient,
     http_client: reqwest::Client,
-    gemini_api_key: String,
-    gemini_base_url: String,
+    nim_api_key: String,
+    nim_base_url: String,
     embedding_model: String,
 }
 
@@ -35,9 +35,9 @@ impl IntelligentRetriever {
                 .timeout(std::time::Duration::from_secs(15))
                 .build()
                 .unwrap_or_default(),
-            gemini_api_key: config.gemini_api_key.clone(),
-            gemini_base_url: config.gemini_base_url.clone(),
-            embedding_model: config.gemini_embedding_model.clone(),
+            nim_api_key: config.nvidia_nim_api_key.clone().unwrap_or_default(),
+            nim_base_url: config.nvidia_nim_base_url.clone(),
+            embedding_model: config.default_embedding_model.clone(),
         }
     }
 
@@ -46,30 +46,32 @@ impl IntelligentRetriever {
     }
 
     pub async fn vectorize_query(&self, query: &str) -> Vec<f64> {
-        if self.gemini_api_key.is_empty() {
-            warn!("GEMINI_API_KEY not set");
+        if self.nim_api_key.is_empty() {
+            warn!("NVIDIA_NIM_API_KEY not set");
             return vec![];
         }
 
-        let url = format!(
-            "{}/v1/models/{}:embedContent?key={}",
-            self.gemini_base_url, self.embedding_model, self.gemini_api_key
-        );
+        let url = format!("{}/v1/embeddings", self.nim_base_url);
 
         let body = serde_json::json!({
-            "model": format!("models/{}", self.embedding_model),
-            "content": {
-                "parts": [{"text": query}]
-            }
+            "input": [query],
+            "model": self.embedding_model,
+            "input_type": "query"
         });
 
-        match self.http_client.post(&url).json(&body).send().await {
+        match self.http_client
+            .post(&url)
+            .header("Authorization", format!("Bearer {}", self.nim_api_key))
+            .json(&body)
+            .send()
+            .await 
+        {
             Ok(resp) => {
                 if let Ok(data) = resp.json::<serde_json::Value>().await {
-                    if let Some(embedding) = data.get("embedding") {
-                        if let Some(values) = embedding.get("values") {
-                            if let Some(arr) = values.as_array() {
-                                return arr.iter().filter_map(|v| v.as_f64()).collect();
+                    if let Some(data_arr) = data.get("data").and_then(|d| d.as_array()) {
+                        if !data_arr.is_empty() {
+                            if let Some(embedding) = data_arr[0].get("embedding").and_then(|e| e.as_array()) {
+                                return embedding.iter().filter_map(|v| v.as_f64()).collect();
                             }
                         }
                     }

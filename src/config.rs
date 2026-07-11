@@ -62,6 +62,15 @@ pub struct Config {
     #[envconfig(from = "GEMINI_EMBEDDING_MODEL", default = "text-embedding-004")]
     pub gemini_embedding_model: String,
     
+    #[envconfig(from = "NVIDIA_NIM_API_KEY")]
+    pub nvidia_nim_api_key: Option<String>,
+    
+    #[envconfig(from = "NVIDIA_NIM_BASE_URL", default = "https://integrate.api.nvidia.com")]
+    pub nvidia_nim_base_url: String,
+    
+    #[envconfig(from = "DEFAULT_EMBEDDING_MODEL", default = "nv-embed-v1")]
+    pub default_embedding_model: String,
+    
     #[envconfig(from = "CLIENT_CONNECTOR_URL", default = "http://localhost:8001")]
     pub client_connector_url: String,
     

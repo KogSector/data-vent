@@ -28,11 +28,11 @@ impl FalkorDBClient {
         })
     }
 
-    pub async fn initialize_indexes(&self, graph_name: &str) -> anyhow::Result<()> {
-        info!("Initializing FalkorDB indexes for graph: {}", graph_name);
+    pub async fn initialize_indexes(&self, graph_name: &str, vector_dim: u16) -> anyhow::Result<()> {
+        info!("Initializing FalkorDB indexes for graph: {} (dim: {})", graph_name, vector_dim);
         // Equivalent to db.idx.vector.createNodeIndex
-        let cypher = "CALL db.idx.vector.createNodeIndex('Vector_Chunk', 'embeddings', 768, 'COSINE')";
-        let _ = self.query(graph_name, cypher).await;
+        let cypher = format!("CALL db.idx.vector.createNodeIndex('Vector_Chunk', 'embeddings', {}, 'COSINE')", vector_dim);
+        let _ = self.query(graph_name, &cypher).await;
         
         let fts_cypher = "CALL db.idx.fulltext.createNodeIndex('Vector_Chunk', 'content')";
         let _ = self.query(graph_name, fts_cypher).await;
