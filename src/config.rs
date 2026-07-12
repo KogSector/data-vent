@@ -46,6 +46,9 @@ pub struct Config {
     #[envconfig(from = "FALKORDB_MAX_RESULTS", default = "10")]
     pub falkordb_max_results: u32,
     
+    #[envconfig(from = "FALKORDB_USE_TLS", default = "false")]
+    pub falkordb_use_tls: bool,
+    
     // Downstream Services
     #[envconfig(from = "EMBEDDINGS_GRPC_ADDR", default = "http://localhost:50052")]
     pub embeddings_grpc_addr: String,

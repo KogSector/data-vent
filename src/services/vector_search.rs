@@ -18,7 +18,7 @@ impl FalkorDBClient {
             String::new()
         };
         
-        let scheme = if config.falkordb_host.contains(".cloud") { "rediss" } else { "redis" };
+        let scheme = if config.falkordb_use_tls { "rediss" } else { "redis" };
         let url = format!("{}://{}{}:{}/{}", scheme, auth, config.falkordb_host, config.falkordb_port, config.falkordb_database);
         let client = redis::Client::open(url)?;
         let connection = client.get_multiplexed_async_connection().await?;
