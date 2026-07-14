@@ -7,7 +7,7 @@ use crate::config::Config;
 
 pub struct FalkorDBClient {
     _client: redis::Client,
-    connection: Arc<Mutex<redis::aio::MultiplexedConnection>>,
+    connection: redis::aio::ConnectionManager,
 }
 
 impl FalkorDBClient {
@@ -21,11 +21,11 @@ impl FalkorDBClient {
         let scheme = if config.falkordb_use_tls { "rediss" } else { "redis" };
         let url = format!("{}://{}{}:{}/{}", scheme, auth, config.falkordb_host, config.falkordb_port, config.falkordb_database);
         let client = redis::Client::open(url)?;
-        let connection = client.get_multiplexed_async_connection().await?;
+        let connection = redis::aio::ConnectionManager::new(client.clone()).await?;
         
         Ok(Self {
             _client: client,
-            connection: Arc::new(Mutex::new(connection)),
+            connection,
         })
     }
 
@@ -41,12 +41,12 @@ impl FalkorDBClient {
     }
 
     pub async fn query(&self, graph_name: &str, cypher: &str) -> anyhow::Result<Value> {
-        let mut conn = self.connection.lock().await;
+        let mut conn = self.connection.clone();
         let result: redis::Value = redis::cmd("GRAPH.QUERY")
             .arg(graph_name)
             .arg(cypher)
             .arg("--compact")
-            .query_async(&mut *conn)
+            .query_async(&mut conn)
             .await?;
             
         // We will return a rough JSON representation, but since parsing GRAPH.QUERY output is complex, 
