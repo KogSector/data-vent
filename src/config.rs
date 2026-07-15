@@ -50,10 +50,10 @@ pub struct Config {
     pub falkordb_use_tls: bool,
     
     // Downstream Services
-    #[envconfig(from = "EMBEDDINGS_GRPC_ADDR", default = "http://localhost:50052")]
+    #[envconfig(from = "EMBEDDINGS_GRPC_ADDR")]
     pub embeddings_grpc_addr: String,
     
-    #[envconfig(from = "EMBEDDINGS_SERVICE_URL", default = "http://localhost:8000")]
+    #[envconfig(from = "EMBEDDINGS_SERVICE_URL")]
     pub embeddings_service_url: String,
     
     #[envconfig(from = "GEMINI_API_KEY")]
@@ -74,10 +74,10 @@ pub struct Config {
     #[envconfig(from = "DEFAULT_EMBEDDING_MODEL", default = "nv-embed-v1")]
     pub default_embedding_model: String,
     
-    #[envconfig(from = "CLIENT_CONNECTOR_URL", default = "http://localhost:8001")]
+    #[envconfig(from = "CLIENT_CONNECTOR_URL")]
     pub client_connector_url: String,
     
-    #[envconfig(from = "CLIENT_CONNECTOR_GRPC_ADDR", default = "http://localhost:50053")]
+    #[envconfig(from = "CLIENT_CONNECTOR_GRPC_ADDR")]
     pub client_connector_grpc_addr: String,
     
     // Retrieval Pipeline
