@@ -39,9 +39,19 @@ async fn main() -> anyhow::Result<()> {
 
     let config = Config::init_from_env().unwrap();
     
-    // Initialize FalkorDB
-    let falkordb_client = FalkorDBClient::new(&config).await?;
-    let _ = falkordb_client.initialize_indexes(&config.falkordb_graph_name, config.falkordb_vector_dimension).await;
+    // Initialize FalkorDB (optional - allow service to start without it)
+    let falkordb_client = match FalkorDBClient::new(&config).await {
+        Ok(client) => {
+            info!("FalkorDB connected successfully");
+            let _ = client.initialize_indexes(&config.falkordb_graph_name, config.falkordb_vector_dimension).await;
+            client
+        }
+        Err(e) => {
+            error!("Failed to connect to FalkorDB: {}. Service will start in degraded mode.", e);
+            // Create a dummy client that returns empty results
+            FalkorDBClient::new_dummy()
+        }
+    };
 
     // Initialize Services
     let retriever = Arc::new(IntelligentRetriever::new(falkordb_client, &config));
@@ -97,7 +107,13 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/v1/retrieve", post(retrieve_handler))
         .with_state(state);
 
-    let addr: SocketAddr = format!("{}:{}", config.host, config.app_port).parse()?;
+    // Use PORT from environment (Render) or fall back to config
+    let port = std::env::var("PORT")
+        .ok()
+        .and_then(|p| p.parse::<u16>().ok())
+        .unwrap_or(config.app_port);
+    
+    let addr: SocketAddr = format!("{}:{}", config.host, port).parse()?;
     
     info!("HTTP server listening on {}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await?;

@@ -1,13 +1,12 @@
 use serde_json::Value;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use tracing::info;
 
 use crate::config::Config;
 
 pub struct FalkorDBClient {
-    _client: redis::Client,
-    connection: redis::aio::ConnectionManager,
+    _client: Option<redis::Client>,
+    connection: Option<redis::aio::ConnectionManager>,
+    is_dummy: bool,
 }
 
 impl FalkorDBClient {
@@ -24,9 +23,20 @@ impl FalkorDBClient {
         let connection = redis::aio::ConnectionManager::new(client.clone()).await?;
         
         Ok(Self {
-            _client: client,
-            connection,
+            _client: Some(client),
+            connection: Some(connection),
+            is_dummy: false,
         })
+    }
+
+    pub fn new_dummy() -> Self {
+        // Create a dummy client that will fail gracefully on queries
+        // This allows the service to start even without FalkorDB
+        Self {
+            _client: None,
+            connection: None,
+            is_dummy: true,
+        }
     }
 
     pub async fn initialize_indexes(&self, graph_name: &str, vector_dim: u16) -> anyhow::Result<()> {
@@ -41,12 +51,21 @@ impl FalkorDBClient {
     }
 
     pub async fn query(&self, graph_name: &str, cypher: &str) -> anyhow::Result<Value> {
-        let mut conn = self.connection.clone();
+        if self.is_dummy || self.connection.is_none() {
+            // Return empty result for dummy client
+            return Ok(serde_json::json!({
+                "results": [],
+                "error": "FalkorDB not connected"
+            }));
+        }
+
+        let conn = self.connection.as_ref().unwrap();
+        let mut conn_clone = conn.clone();
         let result: redis::Value = redis::cmd("GRAPH.QUERY")
             .arg(graph_name)
             .arg(cypher)
             .arg("--compact")
-            .query_async(&mut conn)
+            .query_async(&mut conn_clone)
             .await?;
             
         // We will return a rough JSON representation, but since parsing GRAPH.QUERY output is complex, 
