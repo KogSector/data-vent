@@ -56,15 +56,6 @@ pub struct Config {
     #[envconfig(from = "EMBEDDINGS_SERVICE_URL")]
     pub embeddings_service_url: String,
     
-    #[envconfig(from = "GEMINI_API_KEY")]
-    pub gemini_api_key: String,
-    
-    #[envconfig(from = "GEMINI_BASE_URL", default = "https://generativelanguage.googleapis.com")]
-    pub gemini_base_url: String,
-    
-    #[envconfig(from = "GEMINI_EMBEDDING_MODEL", default = "text-embedding-004")]
-    pub gemini_embedding_model: String,
-    
     #[envconfig(from = "NVIDIA_NIM_API_KEY")]
     pub nvidia_nim_api_key: Option<String>,
     
