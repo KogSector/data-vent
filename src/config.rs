@@ -15,9 +15,6 @@ pub struct Config {
     #[envconfig(from = "GRPC_HOST", default = "0.0.0.0")]
     pub grpc_host: String,
     
-    #[envconfig(from = "ENVIRONMENT", default = "production")]
-    pub environment: String,
-    
     // FalkorDB
     #[envconfig(from = "FALKORDB_HOST", default = "localhost")]
     pub falkordb_host: String,
