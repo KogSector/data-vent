@@ -77,7 +77,7 @@ ENV PORT=3002
 # Switch to non-root user
 USER appuser
 
-# Health check
+# Health check optimized for Render
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:${PORT:-3002}/health || exit 1
 
