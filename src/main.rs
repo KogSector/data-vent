@@ -37,7 +37,43 @@ async fn main() -> anyhow::Result<()> {
     
     info!("Starting data-vent (Rust)");
 
-    let config = Config::init_from_env().unwrap();
+    let config = Config::init_from_env().unwrap_or_else(|e| {
+        tracing::warn!("Config error, using defaults: {}", e);
+        Config {
+            app_port: 3002,
+            host: "0.0.0.0".to_string(),
+            grpc_port: 50051,
+            grpc_host: "0.0.0.0".to_string(),
+            falkordb_host: "localhost".to_string(),
+            falkordb_port: 6379,
+            falkordb_username: "default".to_string(),
+            falkordb_password: None,
+            falkordb_database: 0,
+            falkordb_graph_name: "confuse_graph".to_string(),
+            falkordb_vector_dimension: 768,
+            falkordb_similarity_threshold: 0.7,
+            falkordb_max_results: 10,
+            falkordb_use_tls: false,
+            embeddings_grpc_addr: "embeddings-service:3011".to_string(),
+            embeddings_service_url: "http://embeddings-service:3011".to_string(),
+            nvidia_nim_api_key: None,
+            nvidia_nim_base_url: "https://integrate.api.nvidia.com".to_string(),
+            default_embedding_model: "nv-embed-v1".to_string(),
+            client_connector_url: "http://client-connector:8095".to_string(),
+            client_connector_grpc_addr: "client-connector:8095".to_string(),
+            pipeline_max_query_chunks: 5,
+            pipeline_per_chunk_timeout: 5.0,
+            pipeline_vector_top_k: 10,
+            pipeline_dfs_depth: 2,
+            pipeline_dfs_min_relevance: 0.5,
+            pipeline_dfs_max_results: 20,
+            pipeline_max_total_results: 50,
+            pipeline_vector_weight: 0.7,
+            pipeline_graph_weight: 0.3,
+            pipeline_cross_chunk_weight: 0.1,
+            log_level: "INFO".to_string(),
+        }
+    });
     
     // Initialize FalkorDB (optional - allow service to start without it)
     let falkordb_client = match FalkorDBClient::new(&config).await {

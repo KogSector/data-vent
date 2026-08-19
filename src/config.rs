@@ -47,10 +47,10 @@ pub struct Config {
     pub falkordb_use_tls: bool,
     
     // Downstream Services
-    #[envconfig(from = "EMBEDDINGS_GRPC_ADDR")]
+    #[envconfig(from = "EMBEDDINGS_GRPC_ADDR", default = "embeddings-service:3011")]
     pub embeddings_grpc_addr: String,
     
-    #[envconfig(from = "EMBEDDINGS_SERVICE_URL")]
+    #[envconfig(from = "EMBEDDINGS_SERVICE_URL", default = "http://embeddings-service:3011")]
     pub embeddings_service_url: String,
     
     #[envconfig(from = "NVIDIA_NIM_API_KEY")]
@@ -62,10 +62,10 @@ pub struct Config {
     #[envconfig(from = "DEFAULT_EMBEDDING_MODEL", default = "nv-embed-v1")]
     pub default_embedding_model: String,
     
-    #[envconfig(from = "CLIENT_CONNECTOR_URL")]
+    #[envconfig(from = "CLIENT_CONNECTOR_URL", default = "http://client-connector:8095")]
     pub client_connector_url: String,
     
-    #[envconfig(from = "CLIENT_CONNECTOR_GRPC_ADDR")]
+    #[envconfig(from = "CLIENT_CONNECTOR_GRPC_ADDR", default = "client-connector:8095")]
     pub client_connector_grpc_addr: String,
     
     // Retrieval Pipeline
