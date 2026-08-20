@@ -20,7 +20,13 @@ impl FalkorDBClient {
         let scheme = if config.falkordb_use_tls { "rediss" } else { "redis" };
         let url = format!("{}://{}{}:{}/{}", scheme, auth, config.falkordb_host, config.falkordb_port, config.falkordb_database);
         let client = redis::Client::open(url)?;
-        let connection = redis::aio::ConnectionManager::new(client.clone()).await?;
+        
+        // Add timeout for connection to handle Render free tier spin-up delays
+        let connection = tokio::time::timeout(
+            std::time::Duration::from_secs(30), // 30 second timeout for free tier spin-up
+            redis::aio::ConnectionManager::new(client.clone())
+        ).await
+        .map_err(|_| anyhow::anyhow!("FalkorDB connection timed out after 30s (free tier spin-up?)"))??;
         
         Ok(Self {
             _client: Some(client),
