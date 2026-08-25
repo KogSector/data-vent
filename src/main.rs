@@ -66,8 +66,6 @@ async fn main() -> anyhow::Result<()> {
             nvidia_nim_api_key: None,
             nvidia_nim_base_url: "https://integrate.api.nvidia.com".to_string(),
             default_embedding_model: "nv-embed-v1".to_string(),
-            client_connector_url: "http://client-connector:8095".to_string(),
-            client_connector_grpc_addr: "client-connector:8095".to_string(),
             pipeline_max_query_chunks: 5,
             pipeline_per_chunk_timeout: 5.0,
             pipeline_vector_top_k: 10,

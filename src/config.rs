@@ -62,12 +62,6 @@ pub struct Config {
     #[envconfig(from = "DEFAULT_EMBEDDING_MODEL", default = "nv-embed-v1")]
     pub default_embedding_model: String,
     
-    #[envconfig(from = "CLIENT_CONNECTOR_URL", default = "http://client-connector:8095")]
-    pub client_connector_url: String,
-    
-    #[envconfig(from = "CLIENT_CONNECTOR_GRPC_ADDR", default = "client-connector:8095")]
-    pub client_connector_grpc_addr: String,
-    
     // Retrieval Pipeline
     #[envconfig(from = "PIPELINE_MAX_QUERY_CHUNKS", default = "5")]
     pub pipeline_max_query_chunks: usize,
