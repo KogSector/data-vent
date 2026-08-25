@@ -28,10 +28,17 @@ struct AppState {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Setup panic handler to catch and log panics
+    std::panic::set_hook(Box::new(|panic_info| {
+        tracing::error!("Panic occurred: {}", panic_info);
+    }));
+
     // Load config
+    tracing::info!("Loading environment variables...");
     dotenvy::from_filename_override(".env.map").ok();
     dotenvy::from_filename_override(".env.secret").ok();
     dotenvy::from_filename_override(".env.local").ok();
+    tracing::info!("Environment variables loaded");
     
     tracing_subscriber::fmt::init();
     
