@@ -47,12 +47,6 @@ pub struct Config {
     pub falkordb_use_tls: bool,
     
     // Downstream Services
-    #[envconfig(from = "EMBEDDINGS_GRPC_ADDR", default = "embeddings-service:3011")]
-    pub embeddings_grpc_addr: String,
-    
-    #[envconfig(from = "EMBEDDINGS_SERVICE_URL", default = "http://embeddings-service:3011")]
-    pub embeddings_service_url: String,
-    
     #[envconfig(from = "NVIDIA_NIM_API_KEY")]
     pub nvidia_nim_api_key: Option<String>,
     

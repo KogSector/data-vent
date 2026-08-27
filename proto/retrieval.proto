@@ -134,5 +134,5 @@ message RetrievalHealthResponse {
   string status = 1;
   string version = 2;
   bool falkordb_connected = 3;
-  bool embeddings_service_connected = 4;
+  bool nvidia_nim_connected = 4;
 }

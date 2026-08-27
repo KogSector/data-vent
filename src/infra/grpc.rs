@@ -236,7 +236,7 @@ impl RetrievalService for MyRetrievalService {
             status: "ok".to_string(),
             version: "0.2.0".to_string(),
             falkordb_connected: true,
-            embeddings_service_connected: true,
+            nvidia_nim_connected: true,
         }))
     }
 }

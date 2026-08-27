@@ -8,6 +8,8 @@
 # Stage 1: Rust builder
 FROM debian:bookworm-slim AS rust-builder
 
+ARG RUST_VERSION=stable
+
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
@@ -19,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust via rustup to guarantee latest stable compiler
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${RUST_VERSION}
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
@@ -32,9 +34,9 @@ COPY build.rs ./
 COPY proto/ ./proto/
 
 # Create dummy src for dependency caching
-RUN mkdir -p src/services && \
+RUN mkdir -p src/infra src/services && \
     echo 'fn main() {}' > src/main.rs && \
-    touch src/config.rs src/grpc_server.rs src/services/mod.rs
+    touch src/infra/mod.rs src/infra/config.rs src/infra/grpc.rs src/services/mod.rs
 
 # Build dependencies (cached)
 RUN cargo build --release 2>/dev/null || true

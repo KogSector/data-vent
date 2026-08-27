@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, warn};
 
-use crate::config::Config;
+use crate::infra::Config;
 use crate::services::vector_search::FalkorDBClient;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

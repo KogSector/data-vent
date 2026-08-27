@@ -1,15 +1,19 @@
-mod config;
+mod infra;
 mod services;
-mod grpc_server;
 
-use axum::{routing::{get, post}, Router, Json};
+use axum::{
+    response::sse::{Event, KeepAlive, Sse},
+    routing::{get, post},
+    Json, Router,
+};
 use envconfig::Envconfig;
 use serde::Deserialize;
+use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tracing::{info, error};
+use tracing::{error, info};
 
-use config::Config;
+use infra::Config;
 use services::intelligent_retriever::IntelligentRetriever;
 use services::parallel_search::ParallelSearchDispatcher;
 use services::query_decomposer::QueryDecomposer;
@@ -61,8 +65,6 @@ async fn main() -> anyhow::Result<()> {
             falkordb_similarity_threshold: 0.7,
             falkordb_max_results: 10,
             falkordb_use_tls: false,
-            embeddings_grpc_addr: "embeddings-service:3011".to_string(),
-            embeddings_service_url: "http://embeddings-service:3011".to_string(),
             nvidia_nim_api_key: None,
             nvidia_nim_base_url: "https://integrate.api.nvidia.com".to_string(),
             default_embedding_model: "nv-embed-v1".to_string(),
@@ -129,7 +131,7 @@ async fn main() -> anyhow::Result<()> {
     let grpc_aggregator = aggregator.clone();
     let grpc_default_graph_name = config.falkordb_graph_name.clone();
     tokio::spawn(async move {
-        if let Err(e) = grpc_server::start_grpc_server(
+        if let Err(e) = infra::grpc::start_grpc_server(
             grpc_addr,
             grpc_retriever,
             grpc_decomposer,
@@ -146,6 +148,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/", get(|| async { axum::Json(serde_json::json!({"status": "ok"})) }))
         .route("/health", get(health_check))
         .route("/api/v1/retrieve", post(retrieve_handler))
+        .route("/api/v1/retrieve/stream", post(retrieve_stream_handler))
         .with_state(state);
 
     // Use PORT from environment (Render) or fall back to config
@@ -239,4 +242,90 @@ async fn retrieve_handler(
         "completion_reached": agg_res.completion_reached,
         "total_time_ms": elapsed,
     }))
+}
+
+async fn retrieve_stream_handler(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    headers: axum::http::HeaderMap,
+    Json(req): Json<RetrieveRequest>,
+) -> Sse<impl futures::Stream<Item = Result<Event, Infallible>>> {
+    let (mut tx, rx) = futures::channel::mpsc::channel::<Result<Event, Infallible>>(100);
+
+    tokio::spawn(async move {
+        let start = std::time::Instant::now();
+        let decomp_res = state.decomposer.decompose(&req.intent).await;
+
+        let mut all_chunks = decomp_res.chunks;
+        for kw in &req.keywords {
+            all_chunks.push(QueryChunk {
+                text: kw.clone(),
+                intent: "entity_lookup".to_string(),
+                weight: 1.0,
+                original_span: (0, 0),
+                tokens: kw.split_whitespace().map(|s| s.to_string()).collect(),
+            });
+        }
+
+        let chunk_infos: Vec<serde_json::Value> = all_chunks
+            .iter()
+            .map(|c| {
+                serde_json::json!({
+                    "text": c.text,
+                    "intent": c.intent,
+                    "weight": c.weight,
+                })
+            })
+            .collect();
+
+        let _ = tx.try_send(Ok(Event::default().event("query_decomposition").data(
+            serde_json::json!({
+                "query_chunks": chunk_infos,
+                "decomposition_time_ms": decomp_res.decomposition_time_ms,
+            })
+            .to_string(),
+        )));
+
+        let graph_name = if let Some(user_id) = headers.get("x-user-id").and_then(|h| h.to_str().ok()) {
+            format!("graph-{}", user_id)
+        } else {
+            req.falkordb_graph_name.unwrap_or(state.default_graph_name.clone())
+        };
+
+        let search_res = state.dispatcher.dispatch(&graph_name, all_chunks, &state.retriever).await;
+        let agg_res = state.aggregator.aggregate(search_res, &req.intent, req.limit);
+
+        for (idx, c) in agg_res.chunks.iter().enumerate() {
+            let chunk_data = serde_json::json!({
+                "index": idx,
+                "chunk_id": c.chunk_id,
+                "content": c.content,
+                "final_score": c.final_score,
+                "vector_score": c.vector_score,
+                "graph_score": c.graph_score,
+                "cross_chunk_boost": c.cross_chunk_boost,
+                "chunk_type": c.chunk_type,
+                "source_id": c.source_id,
+                "document_id": c.document_id,
+                "metadata": c.metadata,
+                "matched_by_chunks": c.matched_by_chunks,
+            });
+
+            let _ = tx.try_send(Ok(Event::default().event("chunk_result").data(chunk_data.to_string())));
+        }
+
+        let elapsed = start.elapsed().as_secs_f64() * 1000.0;
+        let _ = tx.try_send(Ok(Event::default().event("done").data(
+            serde_json::json!({
+                "total_results": agg_res.total_results,
+                "unique_sources": agg_res.unique_sources,
+                "vector_matches": agg_res.vector_matches,
+                "graph_matches": agg_res.graph_matches,
+                "completion_reached": agg_res.completion_reached,
+                "total_time_ms": elapsed,
+            })
+            .to_string(),
+        )));
+    });
+
+    Sse::new(rx).keep_alive(KeepAlive::default())
 }

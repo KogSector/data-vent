@@ -1,7 +1,7 @@
 use serde_json::Value;
 use tracing::info;
 
-use crate::config::Config;
+use crate::infra::Config;
 
 pub struct FalkorDBClient {
     _client: Option<redis::Client>,

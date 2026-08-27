@@ -1,26 +1,17 @@
-# Rust build artifacts
+# Data Vent .dockerignore
 target/
-
-# Environment files
-.env
-.env.*
-
-# Git
-.git
+.env*
+.git/
 .gitignore
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
+__pycache__/
+.venv/
 *.log
 logs/
-
-# Docker
-Dockerfile*
-.dockerignore
-
-# Documentation
+tests/
 docs/
 README.md
+Dockerfile*
+.dockerignore
+rust-toolchain
+.DS_Store
+Thumbs.db
