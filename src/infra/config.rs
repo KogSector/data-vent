@@ -9,12 +9,6 @@ pub struct Config {
     #[envconfig(from = "HOST", default = "0.0.0.0")]
     pub host: String,
     
-    #[envconfig(from = "GRPC_PORT", default = "50051")]
-    pub grpc_port: u16,
-    
-    #[envconfig(from = "GRPC_HOST", default = "0.0.0.0")]
-    pub grpc_host: String,
-    
     // FalkorDB
     #[envconfig(from = "FALKORDB_HOST", default = "localhost")]
     pub falkordb_host: String,

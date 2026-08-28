@@ -53,8 +53,6 @@ async fn main() -> anyhow::Result<()> {
         Config {
             app_port: 3002,
             host: "0.0.0.0".to_string(),
-            grpc_port: 50051,
-            grpc_host: "0.0.0.0".to_string(),
             falkordb_host: "localhost".to_string(),
             falkordb_port: 6379,
             falkordb_username: "default".to_string(),
@@ -122,26 +120,6 @@ async fn main() -> anyhow::Result<()> {
         aggregator: aggregator.clone(),
         default_graph_name: config.falkordb_graph_name.clone(),
     };
-
-    // Start gRPC server in background
-    let grpc_addr: SocketAddr = format!("{}:{}", config.grpc_host, config.grpc_port).parse()?;
-    let grpc_retriever = retriever.clone();
-    let grpc_decomposer = decomposer.clone();
-    let grpc_dispatcher = dispatcher.clone();
-    let grpc_aggregator = aggregator.clone();
-    let grpc_default_graph_name = config.falkordb_graph_name.clone();
-    tokio::spawn(async move {
-        if let Err(e) = infra::grpc::start_grpc_server(
-            grpc_addr,
-            grpc_retriever,
-            grpc_decomposer,
-            grpc_dispatcher,
-            grpc_aggregator,
-            grpc_default_graph_name,
-        ).await {
-            error!("gRPC server failed: {}", e);
-        }
-    });
 
     // Define REST routes
     let app = Router::new()
