@@ -22,3 +22,4 @@ futures = "0.3.30"
 regex = "1.10.4"
 tower = "0.4.13"
 tower-http = { version = "0.5.2", features = ["cors", "trace"] }
+lru = "0.12.5"

@@ -1,7 +1,11 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 use tracing::{error, info, warn};
 
 use crate::infra::Config;
+use crate::services::cache::{MultiLevelCache, VectorCacheKey};
+use crate::services::graph_algorithms::{GraphAlgorithms, PathResult};
 use crate::services::vector_search::FalkorDBClient;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,6 +25,8 @@ pub struct SearchResult {
 
 pub struct IntelligentRetriever {
     falkordb_client: FalkorDBClient,
+    pub graph_algo: GraphAlgorithms,
+    pub cache: Arc<MultiLevelCache>,
     http_client: reqwest::Client,
     nim_api_key: String,
     nim_base_url: String,
@@ -28,9 +34,12 @@ pub struct IntelligentRetriever {
 }
 
 impl IntelligentRetriever {
-    pub fn new(falkordb_client: FalkorDBClient, config: &Config) -> Self {
+    pub fn new(falkordb_client: FalkorDBClient, cache: Arc<MultiLevelCache>, config: &Config) -> Self {
+        let graph_algo = GraphAlgorithms::new(falkordb_client.clone());
         Self {
             falkordb_client,
+            graph_algo,
+            cache,
             http_client: reqwest::Client::builder()
                 .timeout(std::time::Duration::from_secs(15))
                 .build()
@@ -46,6 +55,15 @@ impl IntelligentRetriever {
     }
 
     pub async fn vectorize_query(&self, query: &str) -> Vec<f64> {
+        if query.trim().is_empty() {
+            return vec![];
+        }
+
+        // Check L1 Embedding Cache
+        if let Some(cached_vec) = self.cache.get_embedding(query).await {
+            return cached_vec;
+        }
+
         if self.nim_api_key.is_empty() {
             warn!("NVIDIA_NIM_API_KEY not set");
             return vec![];
@@ -71,7 +89,11 @@ impl IntelligentRetriever {
                     if let Some(data_arr) = data.get("data").and_then(|d| d.as_array()) {
                         if !data_arr.is_empty() {
                             if let Some(embedding) = data_arr[0].get("embedding").and_then(|e| e.as_array()) {
-                                return embedding.iter().filter_map(|v| v.as_f64()).collect();
+                                let result: Vec<f64> = embedding.iter().filter_map(|v| v.as_f64()).collect();
+                                if !result.is_empty() {
+                                    self.cache.put_embedding(query.to_string(), result.clone()).await;
+                                }
+                                return result;
                             }
                         }
                     }
@@ -89,6 +111,17 @@ impl IntelligentRetriever {
             return vec![];
         }
 
+        let cache_key = VectorCacheKey {
+            graph_name: graph_name.to_string(),
+            vector_hash: MultiLevelCache::hash_embedding(query_vectors),
+            limit,
+        };
+
+        // Check L2 Vector Search Cache
+        if let Some(cached_results) = self.cache.get_vector_results(&cache_key).await {
+            return cached_results;
+        }
+
         let embedding_str = serde_json::to_string(query_vectors).unwrap_or_default();
         let cypher = format!(
             "CALL db.idx.vector.queryNodes('Vector_Chunk', 'embeddings', {}, vecf32({})) YIELD node, score \
@@ -99,7 +132,11 @@ impl IntelligentRetriever {
         );
 
         match self.falkordb_client.query(graph_name, &cypher).await {
-            Ok(val) => self.parse_graph_results(&val, true),
+            Ok(val) => {
+                let results = self.parse_graph_results(&val, true);
+                self.cache.put_vector_results(cache_key, results.clone()).await;
+                results
+            }
             Err(e) => {
                 error!("vector_search_failed: {}", e);
                 vec![]
@@ -281,5 +318,64 @@ impl IntelligentRetriever {
             results = self.text_search(graph_name, query, num_results).await;
         }
         results
+    }
+
+    pub async fn bfs_traversal(
+        &self,
+        graph_name: &str,
+        start_chunk_ids: &[String],
+        max_depth: usize,
+        max_results: usize,
+    ) -> Vec<SearchResult> {
+        self.graph_algo
+            .bfs_traversal(graph_name, start_chunk_ids, max_depth, max_results)
+            .await
+    }
+
+    #[allow(dead_code)]
+    pub async fn shortest_paths(
+        &self,
+        graph_name: &str,
+        source_id: &str,
+        target_id: &str,
+        max_hops: usize,
+        path_count: usize,
+        rel_types: &[String],
+    ) -> Vec<PathResult> {
+        self.graph_algo
+            .shortest_paths(graph_name, source_id, target_id, max_hops, path_count, rel_types)
+            .await
+    }
+
+    pub async fn get_pagerank_scores(
+        &self,
+        graph_name: &str,
+        candidate_ids: &[String],
+    ) -> HashMap<String, f64> {
+        self.graph_algo
+            .get_pagerank_scores(graph_name, candidate_ids)
+            .await
+    }
+
+    pub async fn get_betweenness_scores(
+        &self,
+        graph_name: &str,
+        candidate_ids: &[String],
+        sampling_size: usize,
+    ) -> HashMap<String, f64> {
+        self.graph_algo
+            .get_betweenness_scores(graph_name, candidate_ids, sampling_size)
+            .await
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_wcc_components(
+        &self,
+        graph_name: &str,
+        candidate_ids: &[String],
+    ) -> HashMap<String, i64> {
+        self.graph_algo
+            .get_wcc_components(graph_name, candidate_ids)
+            .await
     }
 }

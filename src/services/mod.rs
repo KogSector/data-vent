@@ -1,3 +1,7 @@
+pub mod cache;
+pub mod context_aware_retrieval;
+pub mod fusion;
+pub mod graph_algorithms;
 pub mod intelligent_retriever;
 pub mod parallel_search;
 pub mod query_decomposer;

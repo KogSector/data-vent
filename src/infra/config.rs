@@ -80,6 +80,73 @@ pub struct Config {
     
     #[envconfig(from = "PIPELINE_CROSS_CHUNK_WEIGHT", default = "0.1")]
     pub pipeline_cross_chunk_weight: f64,
+
+    // FalkorDB Graph Algorithms
+    #[envconfig(from = "ENABLE_BFS", default = "true")]
+    pub enable_bfs: bool,
+
+    #[envconfig(from = "ENABLE_PAGERANK", default = "true")]
+    pub enable_pagerank: bool,
+
+    #[envconfig(from = "ENABLE_BETWEENNESS", default = "false")]
+    pub enable_betweenness: bool,
+
+    #[envconfig(from = "ENABLE_WCC", default = "false")]
+    pub enable_wcc: bool,
+
+    #[envconfig(from = "ENABLE_SPPATHS", default = "false")]
+    pub enable_sppaths: bool,
+
+    #[envconfig(from = "PAGERANK_BOOST_WEIGHT", default = "0.15")]
+    pub pagerank_boost_weight: f64,
+
+    // HNSW Configuration
+    #[envconfig(from = "HNSW_M", default = "24")]
+    pub hnsw_m: u32,
+
+    #[envconfig(from = "HNSW_EF_CONSTRUCTION", default = "250")]
+    pub hnsw_ef_construction: u32,
+
+    #[envconfig(from = "HNSW_EF_RUNTIME", default = "25")]
+    pub hnsw_ef_runtime: u32,
+
+    #[envconfig(from = "HNSW_SIMILARITY_FUNCTION", default = "COSINE")]
+    pub hnsw_similarity_function: String,
+
+    #[envconfig(from = "HNSW_MODE", default = "balanced")]
+    pub hnsw_mode: String,
+
+    // Multi-Level Caching
+    #[envconfig(from = "CACHE_EMBEDDING_CAPACITY", default = "1000")]
+    pub cache_embedding_capacity: usize,
+
+    #[envconfig(from = "CACHE_EMBEDDING_TTL_SECS", default = "3600")]
+    pub cache_embedding_ttl_secs: u64,
+
+    #[envconfig(from = "CACHE_VECTOR_CAPACITY", default = "1000")]
+    pub cache_vector_capacity: usize,
+
+    #[envconfig(from = "CACHE_VECTOR_TTL_SECS", default = "300")]
+    pub cache_vector_ttl_secs: u64,
+
+    #[envconfig(from = "CACHE_ALGORITHM_CAPACITY", default = "500")]
+    pub cache_algorithm_capacity: usize,
+
+    #[envconfig(from = "CACHE_ALGORITHM_TTL_SECS", default = "1800")]
+    pub cache_algorithm_ttl_secs: u64,
+
+    #[envconfig(from = "CACHE_RESULT_CAPACITY", default = "500")]
+    pub cache_result_capacity: usize,
+
+    #[envconfig(from = "CACHE_RESULT_TTL_SECS", default = "120")]
+    pub cache_result_ttl_secs: u64,
+
+    // Advanced Result Fusion
+    #[envconfig(from = "FUSION_ALGORITHM", default = "wrrf")]
+    pub fusion_algorithm: String,
+
+    #[envconfig(from = "WRRF_K", default = "60.0")]
+    pub wrrf_k: f64,
     
     #[envconfig(from = "LOG_LEVEL", default = "INFO")]
     pub log_level: String,

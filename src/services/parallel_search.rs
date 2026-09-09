@@ -28,6 +28,7 @@ pub struct ParallelSearchDispatcher {
     dfs_depth: usize,
     dfs_min_relevance: f64,
     dfs_max_results: usize,
+    pub enable_bfs: bool,
 }
 
 impl ParallelSearchDispatcher {
@@ -37,6 +38,7 @@ impl ParallelSearchDispatcher {
         dfs_depth: usize,
         dfs_min_relevance: f64,
         dfs_max_results: usize,
+        enable_bfs: bool,
     ) -> Self {
         Self {
             per_chunk_timeout,
@@ -44,6 +46,7 @@ impl ParallelSearchDispatcher {
             dfs_depth,
             dfs_min_relevance,
             dfs_max_results,
+            enable_bfs,
         }
     }
 
@@ -76,11 +79,6 @@ impl ParallelSearchDispatcher {
             let vector = if i < vectors.len() { vectors[i].clone() } else { vec![] };
             let timeout_dur = std::time::Duration::from_secs_f64(self.per_chunk_timeout);
             
-            // Cannot easily move self and retriever into a spawn without Arc.
-            // Since we're in async, we can just execute sequentially for now, or use futures::future::join_all
-            // Actually, we can use tokio::spawn if we Arc them, but for simplicity let's just do sequential for the rewrite MVP,
-            // OR use futures::future::join_all without spawning.
-            
             let fut = async move {
                 let s = Instant::now();
                 let mut chunk_res = ChunkSearchResult {
@@ -103,7 +101,12 @@ impl ParallelSearchDispatcher {
                     let mut g_res = vec![];
                     if !v_res.is_empty() {
                         let seed_ids: Vec<String> = v_res.iter().take(3).map(|r| r.chunk_id.clone()).collect();
-                        g_res = retriever.dfs_traversal(graph_name, &seed_ids, self.dfs_depth, self.dfs_min_relevance, self.dfs_max_results).await;
+                        if self.enable_bfs {
+                            g_res = retriever.bfs_traversal(graph_name, &seed_ids, self.dfs_depth, self.dfs_max_results).await;
+                        }
+                        if g_res.is_empty() {
+                            g_res = retriever.dfs_traversal(graph_name, &seed_ids, self.dfs_depth, self.dfs_min_relevance, self.dfs_max_results).await;
+                        }
                     }
                     (v_res, g_res)
                 };

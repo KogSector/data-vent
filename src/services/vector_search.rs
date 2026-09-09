@@ -1,8 +1,59 @@
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::info;
 
 use crate::infra::Config;
 
+#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HNSWConfig {
+    pub m: u32,
+    pub ef_construction: u32,
+    pub ef_runtime: u32,
+    pub similarity_function: String,
+    pub mode: String,
+}
+
+#[allow(dead_code)]
+impl HNSWConfig {
+    pub fn from_mode(mode: &str) -> Self {
+        match mode.to_lowercase().as_str() {
+            "high_recall" => Self {
+                m: 32,
+                ef_construction: 300,
+                ef_runtime: 50,
+                similarity_function: "COSINE".to_string(),
+                mode: "high_recall".to_string(),
+            },
+            "low_latency" => Self {
+                m: 16,
+                ef_construction: 200,
+                ef_runtime: 10,
+                similarity_function: "COSINE".to_string(),
+                mode: "low_latency".to_string(),
+            },
+            _ => Self {
+                m: 24,
+                ef_construction: 250,
+                ef_runtime: 25,
+                similarity_function: "COSINE".to_string(),
+                mode: "balanced".to_string(),
+            },
+        }
+    }
+
+    pub fn from_config(config: &Config) -> Self {
+        Self {
+            m: config.hnsw_m,
+            ef_construction: config.hnsw_ef_construction,
+            ef_runtime: config.hnsw_ef_runtime,
+            similarity_function: config.hnsw_similarity_function.clone(),
+            mode: config.hnsw_mode.clone(),
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct FalkorDBClient {
     _client: Option<redis::Client>,
     connection: Option<redis::aio::ConnectionManager>,
