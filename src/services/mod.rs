@@ -7,3 +7,7 @@ pub mod parallel_search;
 pub mod query_decomposer;
 pub mod result_aggregator;
 pub mod vector_search;
+pub mod performance_profiler;
+pub mod memory_pool;
+
+

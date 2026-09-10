@@ -23,3 +23,19 @@ regex = "1.10.4"
 tower = "0.4.13"
 tower-http = { version = "0.5.2", features = ["cors", "trace"] }
 lru = "0.12.5"
+
+[lib]
+name = "data_vent"
+path = "src/lib.rs"
+
+[[bin]]
+name = "data-vent"
+path = "src/main.rs"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["async_tokio"] }
+
+[[bench]]
+name = "hnsw_benchmark"
+harness = false
+

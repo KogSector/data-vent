@@ -24,7 +24,7 @@ pub struct SearchResult {
 }
 
 pub struct IntelligentRetriever {
-    falkordb_client: FalkorDBClient,
+    pub falkordb_client: FalkorDBClient,
     pub graph_algo: GraphAlgorithms,
     pub cache: Arc<MultiLevelCache>,
     http_client: reqwest::Client,
@@ -52,6 +52,10 @@ impl IntelligentRetriever {
 
     pub async fn _close(&self) {
         let _ = self.falkordb_client._close().await;
+    }
+
+    pub async fn update_hnsw_parameters(&self, graph_name: &str, config: &crate::services::vector_search::HNSWConfig) -> anyhow::Result<()> {
+        self.falkordb_client.update_hnsw_parameters(graph_name, config).await
     }
 
     pub async fn vectorize_query(&self, query: &str) -> Vec<f64> {

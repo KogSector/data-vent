@@ -107,6 +107,20 @@ impl FalkorDBClient {
         Ok(())
     }
 
+    pub async fn update_hnsw_parameters(
+        &self,
+        graph_name: &str,
+        config: &HNSWConfig,
+    ) -> anyhow::Result<()> {
+        let cypher = format!(
+            "CALL db.idx.vector.configureNodeIndex('Vector_Chunk', 'embeddings', \
+             {{M: {}, efConstruction: {}, efRuntime: {}, similarityFunction: '{}'}})",
+            config.m, config.ef_construction, config.ef_runtime, config.similarity_function
+        );
+        self.query(graph_name, &cypher).await?;
+        Ok(())
+    }
+
     pub async fn query(&self, graph_name: &str, cypher: &str) -> anyhow::Result<Value> {
         if self.is_dummy || self.connection.is_none() {
             // Return empty result for dummy client

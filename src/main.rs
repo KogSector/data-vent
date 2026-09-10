@@ -171,11 +171,13 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/", get(|| async { axum::Json(serde_json::json!({"status": "ok"})) }))
         .route("/health", get(health_check))
+        .route("/metrics", get(metrics_handler))
         .route("/api/v1/retrieve", post(retrieve_handler))
         .route("/api/v1/retrieve/stream", post(retrieve_stream_handler))
         .route("/api/v1/retrieve/context", post(context_retrieve_handler))
         .route("/api/v1/retrieve/multi-hop", post(multi_hop_handler))
         .route("/api/v1/cache/invalidate", post(cache_invalidate_handler))
+        .route("/api/v1/hnsw/update", post(update_hnsw_handler))
         .with_state(state);
 
     // Use PORT from environment (Render) or fall back to config
@@ -193,15 +195,47 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn health_check() -> Json<serde_json::Value> {
+async fn health_check(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> Json<serde_json::Value> {
+    let cache_stats = state.cache.get_cache_stats().await;
     Json(serde_json::json!({
         "status": "healthy",
         "service": "data-vent",
         "version": "0.3.0",
-        "pipeline": "active",
+        "performance": {
+            "cache_hit_rate": cache_stats.vector_hit_rate,
+            "embedding_hit_rate": cache_stats.embedding_hit_rate,
+            "algorithm_hit_rate": cache_stats.algorithm_hit_rate,
+            "result_hit_rate": cache_stats.result_hit_rate,
+        },
         "algorithms": ["bfs", "sppaths", "pagerank", "betweenness", "wcc"],
         "fusion": "wrrf",
         "cache": "4-tier-lru"
+    }))
+}
+
+async fn metrics_handler(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> Json<serde_json::Value> {
+    let cache_stats = state.cache.get_cache_stats().await;
+    Json(serde_json::json!({
+        "cache_performance": {
+            "embedding_hit_rate": cache_stats.embedding_hit_rate,
+            "vector_hit_rate": cache_stats.vector_hit_rate,
+            "algorithm_hit_rate": cache_stats.algorithm_hit_rate,
+            "result_hit_rate": cache_stats.result_hit_rate,
+        },
+        "service_info": {
+            "version": "0.3.0",
+            "algorithms_enabled": {
+                "bfs": true,
+                "pagerank": true,
+                "betweenness": false,
+                "wcc": false,
+                "sppaths": false,
+            }
+        }
     }))
 }
 
@@ -300,6 +334,11 @@ async fn retrieve_handler(
     } else {
         req.falkordb_graph_name.unwrap_or_else(|| state.default_graph_name.clone())
     };
+
+    if let Some(ref hnsw) = req.hnsw_config {
+        let hnsw_cfg = services::vector_search::HNSWConfig::from_mode(&hnsw.mode);
+        let _ = state.retriever.update_hnsw_parameters(&graph_name, &hnsw_cfg).await;
+    }
 
     let search_res = state.dispatcher.dispatch(&graph_name, all_chunks, &state.retriever).await;
 
@@ -567,3 +606,30 @@ async fn cache_invalidate_handler(
         "message": format!("Cache invalidated for graph: {}", graph),
     }))
 }
+
+#[derive(Deserialize)]
+struct HnswUpdateRequest {
+    pub mode: String, // "high_recall", "balanced", "low_latency"
+    pub falkordb_graph_name: Option<String>,
+}
+
+async fn update_hnsw_handler(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    Json(req): Json<HnswUpdateRequest>,
+) -> Json<serde_json::Value> {
+    let config = services::vector_search::HNSWConfig::from_mode(&req.mode);
+    let graph_name = req.falkordb_graph_name.unwrap_or_else(|| state.default_graph_name.clone());
+
+    match state.retriever.update_hnsw_parameters(&graph_name, &config).await {
+        Ok(_) => Json(serde_json::json!({
+            "status": "success",
+            "mode": req.mode,
+            "config": config
+        })),
+        Err(e) => Json(serde_json::json!({
+            "status": "error",
+            "error": e.to_string()
+        }))
+    }
+}
+

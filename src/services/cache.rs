@@ -206,7 +206,101 @@ impl MultiLevelCache {
         }
         tracing::info!("Invalidated caches for graph: {}", graph_name);
     }
+
+    #[allow(dead_code)]
+    pub async fn warm_frequent_queries(
+        &self,
+        queries: Vec<String>,
+        retriever: &crate::services::intelligent_retriever::IntelligentRetriever,
+        graph_name: &str,
+    ) -> anyhow::Result<usize> {
+        let mut warmed = 0;
+
+        for query in queries {
+            let embedding = retriever.vectorize_query(&query).await;
+            if !embedding.is_empty() {
+                let vector_key = VectorCacheKey {
+                    graph_name: graph_name.to_string(),
+                    vector_hash: Self::hash_embedding(&embedding),
+                    limit: 10,
+                };
+
+                // Pre-fetch results
+                let results = retriever.vector_search(graph_name, &embedding, 10).await;
+                self.put_vector_results(vector_key, results).await;
+                warmed += 1;
+            }
+        }
+
+        tracing::info!("Cache warming completed: {} queries pre-fetched", warmed);
+        Ok(warmed)
+    }
+
+    pub async fn get_cache_stats(&self) -> CacheStats {
+        let embedding_hit_rate = self.calculate_hit_rate(
+            self.metrics.embedding_hits.load(Ordering::Relaxed),
+            self.metrics.embedding_misses.load(Ordering::Relaxed),
+        );
+
+        let vector_hit_rate = self.calculate_hit_rate(
+            self.metrics.vector_hits.load(Ordering::Relaxed),
+            self.metrics.vector_misses.load(Ordering::Relaxed),
+        );
+
+        let algorithm_hit_rate = self.calculate_hit_rate(
+            self.metrics.algorithm_hits.load(Ordering::Relaxed),
+            self.metrics.algorithm_misses.load(Ordering::Relaxed),
+        );
+
+        let result_hit_rate = self.calculate_hit_rate(
+            self.metrics.result_hits.load(Ordering::Relaxed),
+            self.metrics.result_misses.load(Ordering::Relaxed),
+        );
+
+        CacheStats {
+            embedding_hit_rate,
+            vector_hit_rate,
+            algorithm_hit_rate,
+            result_hit_rate,
+        }
+    }
+
+    fn calculate_hit_rate(&self, hits: u64, misses: u64) -> f64 {
+        let total = hits + misses;
+        if total == 0 {
+            0.0
+        } else {
+            (hits as f64) / (total as f64)
+        }
+    }
+
+    #[allow(dead_code)]
+    pub async fn auto_tune_cache_sizes(&self, target_hit_rate: f64) {
+        let stats = self.get_cache_stats().await;
+
+        if stats.vector_hit_rate < target_hit_rate {
+            let mut v_cache = self.vector_cache.lock().await;
+            let current_cap = v_cache.cap().get();
+            let new_cap = NonZeroUsize::new(current_cap * 3 / 2).unwrap_or(v_cache.cap());
+            v_cache.resize(new_cap);
+            tracing::info!(
+                "Auto-tuning: Increased vector cache size from {} to {} (hit rate: {:.2}%)",
+                current_cap,
+                new_cap.get(),
+                stats.vector_hit_rate * 100.0
+            );
+        }
+    }
 }
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct CacheStats {
+    pub embedding_hit_rate: f64,
+    pub vector_hit_rate: f64,
+    pub algorithm_hit_rate: f64,
+    pub result_hit_rate: f64,
+}
+
 
 #[cfg(test)]
 mod tests {

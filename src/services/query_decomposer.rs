@@ -72,6 +72,37 @@ impl QueryDecomposer {
         }
     }
 
+    #[allow(dead_code)]
+    pub async fn decompose_fast(&self, query: &str) -> DecompositionResult {
+        let trimmed = query.trim();
+        if trimmed.is_empty() {
+            return DecompositionResult {
+                _original_query: query.to_string(),
+                chunks: vec![],
+                _total_chunks: 0,
+                decomposition_time_ms: 0.0,
+            };
+        }
+
+        if trimmed.len() < 50 {
+            let tokens: Vec<String> = trimmed.split_whitespace().map(|s| s.to_string()).collect();
+            return DecompositionResult {
+                _original_query: query.to_string(),
+                chunks: vec![QueryChunk {
+                    text: trimmed.to_string(),
+                    intent: "simple".to_string(),
+                    weight: 1.0,
+                    original_span: (0, trimmed.len()),
+                    tokens,
+                }],
+                _total_chunks: 1,
+                decomposition_time_ms: 0.05,
+            };
+        }
+
+        self.decompose(query).await
+    }
+
     pub async fn decompose(&self, query: &str) -> DecompositionResult {
         let start = std::time::Instant::now();
         if query.trim().is_empty() {

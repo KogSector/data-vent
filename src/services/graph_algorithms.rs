@@ -553,4 +553,35 @@ impl GraphAlgorithms {
         }
         map
     }
+
+    #[allow(dead_code)]
+    pub async fn run_parallel_algorithms(
+        &self,
+        graph_name: &str,
+        candidate_ids: &[String],
+    ) -> ParallelAlgorithmResults {
+        let start = std::time::Instant::now();
+        let (pagerank, betweenness, wcc) = tokio::join!(
+            self.get_pagerank_scores(graph_name, candidate_ids),
+            self.get_betweenness_scores(graph_name, candidate_ids, 64),
+            self.get_wcc_components(graph_name, candidate_ids),
+        );
+
+        ParallelAlgorithmResults {
+            pagerank,
+            betweenness,
+            wcc,
+            total_duration_ms: start.elapsed().as_secs_f64() * 1000.0,
+        }
+    }
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParallelAlgorithmResults {
+    pub pagerank: HashMap<String, f64>,
+    pub betweenness: HashMap<String, f64>,
+    pub wcc: HashMap<String, i64>,
+    pub total_duration_ms: f64,
+}
+
