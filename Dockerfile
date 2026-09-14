@@ -2,27 +2,17 @@
 # Data Vent Service - Dockerfile
 # ==============================================================================
 # Multi-stage build for Rust retrieval engine
-# Port: 3002 (HTTP), 50051 (gRPC)
+# Port: 3002 (HTTP)
 # ==============================================================================
 
 # Stage 1: Rust builder
-FROM debian:bookworm-slim AS rust-builder
-
-ARG RUST_VERSION=stable
+FROM rust:1.94-slim-bookworm AS rust-builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    ca-certificates \
     pkg-config \
     libssl-dev \
-    build-essential \
-    protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Rust via rustup to guarantee latest stable compiler
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${RUST_VERSION}
-ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
 
@@ -30,16 +20,11 @@ WORKDIR /app
 # Dependency caching layer
 # ---------------------------------------------------------------------------
 COPY Cargo.toml Cargo.lock* ./
-COPY build.rs ./
-COPY proto/ ./proto/
 
 # Create dummy src for dependency caching
-RUN mkdir -p src/infra src/services && \
+RUN mkdir -p src && \
     echo 'fn main() {}' > src/main.rs && \
-    touch src/infra/mod.rs src/infra/config.rs src/infra/grpc.rs src/services/mod.rs
-
-# Build dependencies (cached)
-RUN cargo build --release 2>/dev/null || true
+    cargo build --release 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # Real build
@@ -47,8 +32,8 @@ RUN cargo build --release 2>/dev/null || true
 RUN rm -rf src/*
 COPY src/ ./src/
 
-# Force Cargo to rebuild the actual source
-RUN find src -type f -exec touch {} +
+# Force Cargo to rebuild the actual binary
+RUN cargo clean -p data-vent 2>/dev/null; true
 RUN cargo build --release
 
 # ==============================================================================
@@ -83,9 +68,10 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:${PORT:-3002}/health || exit 1
 
-EXPOSE 3002 50051
+EXPOSE 3002
 
 # Use dumb-init as PID 1 for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
 
 CMD ["data-vent"]
+
