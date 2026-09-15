@@ -1,5 +1,10 @@
-*.env
+.env
 .env.*
+.map.env
+.secret.env
+!.env.example
+!.map.env.example
+!.secret.env.example
 __pycache__
 logs/
 .pytest_cache

@@ -116,7 +116,7 @@ GET /health
 
 ### Required Environment Variables
 
-#### `.env.map` (Non-sensitive)
+#### `.map.env` (Non-sensitive)
 ```bash
 # Service Configuration
 DATA_VENT_PORT=3002
@@ -152,7 +152,7 @@ PIPELINE_CROSS_CHUNK_WEIGHT=0.1
 LOG_LEVEL=INFO
 ```
 
-#### `.env.secret` (Sensitive)
+#### `.secret.env` (Sensitive)
 ```bash
 # FalkorDB Authentication
 FALKORDB_PASSWORD=your_falkordb_password
